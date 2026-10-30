@@ -60,6 +60,39 @@ export type Database = {
         }
         Relationships: []
       }
+      todos: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          due_on: string | null
+          id: string
+          notes: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          due_on?: string | null
+          id?: string
+          notes?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          due_on?: string | null
+          id?: string
+          notes?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

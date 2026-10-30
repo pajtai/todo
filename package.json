@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:types": "supabase gen types typescript --linked > src/lib/database.types.ts",
     "db:push": "supabase db push",
-    "db:new": "supabase migration new"
+    "db:new": "supabase migration new",
+    "db:test": "./scripts/db-test.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
