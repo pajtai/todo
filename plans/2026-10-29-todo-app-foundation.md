@@ -13,7 +13,7 @@ Repo state at plan time: greenfield — only empty `README.md`, empty `.gitignor
 
 Project conventions (from `CLAUDE.md`): commit after changes in small grouped commits; keep `docs/` updated and link new docs from the "Detailed docs" list in `CLAUDE.md`.
 
-**Hosted-database conventions (apply to every phase):** apply schema with `npm run db:new <name>`, `npm run db:push`, `npm run db:types`; never reset the hosted DB as routine. The project has "Automatically expose new tables" off, so every table's migration must explicitly `enable row level security` **and** `grant` privileges to `authenticated`. Older steps below that mention `db:reset` or the local mail catcher are superseded by this. Confirmation emails are real and rate-limited on the default sender.
+**Hosted-database conventions (apply to every phase):** apply schema with `npm run db:new <name>`, `npm run db:push`, `npm run db:types`; never reset the hosted DB as routine. The project has "Automatically expose new tables" off, so every table's migration must explicitly `enable row level security` **and** `grant` privileges to `authenticated`. Older steps below that mention `db:reset` or the local mail catcher are superseded by this. Confirmation emails are real and rate-limited on the default sender. Database tests are self-checking SQL files that roll back, run with `npm run db:test`, instead of pgTAP (see `docs/data-model.md`).
 
 **Cross-plan execution sequence:** this file contains Phases 1–4 and must be completed first. Then execute `plans/2026-10-29-todo-app-review-habits-deploy.md` (Phases 5–7) in order.
 
@@ -114,17 +114,17 @@ Signed in, type "Buy milk" in quick-add and press Enter → it appears in the op
 - `docs/auth.md` — RLS convention
 
 ### Implementation Steps
-- [ ] Write todos migration; `npm run db:reset`; `npm run db:types`
-- [ ] Write pgTAP RLS test; add `db:test` npm script
-- [ ] Implement server actions and todos page (quick-add, list, toggle, edit, delete)
-- [ ] Write `docs/data-model.md` describing `profiles` and `todos` (to be extended in later phases); link from `CLAUDE.md`
-- [ ] Commit (migration + tests, UI, docs)
+- [x] Write todos migration; `npm run db:reset`; `npm run db:types`
+- [x] Write pgTAP RLS test; add `db:test` npm script
+- [x] Implement server actions and todos page (quick-add, list, toggle, edit, delete)
+- [x] Write `docs/data-model.md` describing `profiles` and `todos` (to be extended in later phases); link from `CLAUDE.md`
+- [x] Commit (migration + tests, UI, docs)
 
 ### Verification Steps
-- [ ] Manual flow above works end-to-end
-- [ ] `npm run db:test` passes
-- [ ] Empty/whitespace-only title is rejected with a visible message
-- [ ] Toggling quickly twice leaves a consistent state after reload
+- [x] Manual flow above works end-to-end
+- [x] `npm run db:test` passes
+- [x] Empty/whitespace-only title is rejected with a visible message
+- [x] Toggling quickly twice leaves a consistent state after reload
 
 ---
 
