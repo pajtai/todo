@@ -4,7 +4,7 @@
 We are building a multi-user todo app. Beyond tracking todos and completion, its main purpose is to make it easy to **review completed todos and see which project, goal, habit, etc. each belongs to**.
 
 Decisions already made:
-- **Stack:** Next.js (App Router) + TypeScript + Tailwind, using `@supabase/ssr` for auth/session handling. Hosted on **Vercel**; backend is **Supabase** (Postgres + Auth). All initial development and testing happen **locally** against the Supabase CLI's Docker stack.
+- **Stack:** Next.js (App Router) + TypeScript + Tailwind, using `@supabase/ssr` for auth/session handling. Hosted on **Vercel**; backend is **Supabase** (Postgres + Auth). The app runs locally during development against a **hosted Supabase project** (ref `ikskdeuslqfakakhlmra`, `us-east-1`). The local Supabase Docker stack was dropped because it was too heavy for the dev machine.
 - **Users:** multiple independent users. Open sign-up; every row is owned by a user and protected by Row Level Security (RLS) — users only ever see their own data.
 - **Grouping model:** a single generic `areas` table with a `type` (`project`, `goal`, `habit`, `area`, `other`) and an optional `parent_id`, so e.g. a project can roll up to a goal. Todos link to **zero or more** areas through a `todo_areas` join table.
 - **Habits:** habit-type areas will carry a simple recurrence rule and generate todo instances (handled in the second plan file).
@@ -12,6 +12,8 @@ Decisions already made:
 Repo state at plan time: greenfield — only empty `README.md`, empty `.gitignore`, `CLAUDE.md`, and an empty `docs/` directory. Node v22.15.1, npm 10.9.2, Docker and the `vercel` CLI are installed; the Supabase CLI is **not** installed globally (use it as an npm dev dependency via `npx supabase`).
 
 Project conventions (from `CLAUDE.md`): commit after changes in small grouped commits; keep `docs/` updated and link new docs from the "Detailed docs" list in `CLAUDE.md`.
+
+**Hosted-database conventions (apply to every phase):** apply schema with `npm run db:new <name>`, `npm run db:push`, `npm run db:types`; never reset the hosted DB as routine. The project has "Automatically expose new tables" off, so every table's migration must explicitly `enable row level security` **and** `grant` privileges to `authenticated`. Older steps below that mention `db:reset` or the local mail catcher are superseded by this. Confirmation emails are real and rate-limited on the default sender.
 
 **Cross-plan execution sequence:** this file contains Phases 1–4 and must be completed first. Then execute `plans/2026-10-29-todo-app-review-habits-deploy.md` (Phases 5–7) in order.
 
@@ -26,11 +28,11 @@ Horizontal setup phase (unavoidable). Create the Next.js app in the repo root, a
 Key outputs later phases rely on:
 - `supabase/config.toml` and `supabase/migrations/` (migrations are the single source of truth for schema; never edit schema via Studio without capturing a migration).
 - `src/lib/supabase/client.ts` (browser client via `createBrowserClient`), `src/lib/supabase/server.ts` (server client via `createServerClient` using `next/headers` cookies), and the session-refresh middleware (`src/middleware.ts`, or `src/proxy.ts` if the installed Next.js version has renamed middleware — check the version's docs).
-- `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or the newer publishable key name) from `npx supabase status`; `.env.example` committed with placeholder values.
-- npm scripts: `db:start`, `db:stop`, `db:reset`, `db:types` (`supabase gen types typescript --local > src/lib/database.types.ts`).
+- `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the Supabase dashboard; `.env.example` committed with placeholder values.
+- npm scripts: `db:new`, `db:push`, `db:types` (`supabase gen types typescript --linked > src/lib/database.types.ts`).
 
 ### Testable End-State
-`npm run db:start` brings up local Supabase (Studio reachable at http://127.0.0.1:54323). `npm run dev` serves http://localhost:3000, and a temporary `/health` server route performs a trivial Supabase call (e.g. `supabase.auth.getSession()`) and returns `{ ok: true }` — proving the env vars and server client work.
+The repo is linked to the hosted project. `npm run dev` serves http://localhost:3000, and a temporary `/health` server route calls the hosted Auth API and returns `{ ok: true }` — proving the env vars and server client work.
 
 ### References
 - `CLAUDE.md` — commit/docs conventions
@@ -38,20 +40,20 @@ Key outputs later phases rely on:
 - Supabase docs: "Setting up Server-Side Auth for Next.js" (`@supabase/ssr`) — canonical file layout for client/server/middleware helpers
 
 ### Implementation Steps
-- [ ] `npx create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*"` (move existing `README.md`/`CLAUDE.md`/`docs/` aside if the generator refuses a non-empty dir, then restore)
-- [ ] `npm i @supabase/supabase-js @supabase/ssr` and `npm i -D supabase`
-- [ ] `npx supabase init`; add npm scripts `db:start`, `db:stop`, `db:reset`, `db:types`
-- [ ] Create `src/lib/supabase/client.ts`, `src/lib/supabase/server.ts`, and middleware session refresh helper
-- [ ] Create `.env.example`; ensure `.gitignore` covers `.env*.local`, `node_modules`, `.next`, `supabase/.branches`, `supabase/.temp`
-- [ ] Add temporary `src/app/health/route.ts`
-- [ ] Write `docs/local-development.md` (prereqs, start/stop/reset DB, env setup, type generation) and link it from `CLAUDE.md` "Detailed docs"; fill in `README.md` with a short overview pointing to docs
-- [ ] Commit (scaffold commit, then Supabase setup commit, then docs commit)
+- [x] `npx create-next-app@latest . --ts --tailwind --eslint --app --src-dir --import-alias "@/*"` (move existing `README.md`/`CLAUDE.md`/`docs/` aside if the generator refuses a non-empty dir, then restore)
+- [x] `npm i @supabase/supabase-js @supabase/ssr` and `npm i -D supabase`
+- [x] `npx supabase init`; `supabase link`; add npm scripts `db:new`, `db:push`, `db:types`
+- [x] Create `src/lib/supabase/client.ts`, `src/lib/supabase/server.ts`, and middleware session refresh helper
+- [x] Create `.env.example`; ensure `.gitignore` covers `.env*.local`, `node_modules`, `.next`, `supabase/.branches`, `supabase/.temp`
+- [x] Add temporary `src/app/health/route.ts`
+- [x] Write `docs/local-development.md` (env setup, linking, migrations, type generation) and link it from `CLAUDE.md` "Detailed docs"; fill in `README.md` with a short overview pointing to docs
+- [x] Commit (scaffold commit, then Supabase setup commit, then docs commit)
 
 ### Verification Steps
-- [ ] `npm run db:start` succeeds; `npx supabase status` prints API URL and keys
-- [ ] `curl http://localhost:3000/health` returns `{"ok":true}`
-- [ ] `npm run build` and `npm run lint` pass
-- [ ] `git status` shows no `.env.local` tracked
+- [x] `npx supabase migration list --linked` connects to the hosted project
+- [x] `curl http://localhost:3000/health` returns `{"ok":true}`
+- [x] `npm run build` and `npm run lint` pass
+- [x] `git status` shows no `.env.local` tracked
 
 ---
 

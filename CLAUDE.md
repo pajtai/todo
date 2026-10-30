@@ -9,3 +9,7 @@
 
 ## Detailed docs
 
+- [Local development](docs/local-development.md) — running the app against hosted Supabase, DB scripts, migrations, Supabase client helpers
+
+## Next.js
+@AGENTS.md

@@ -1,7 +1,7 @@
 # Plan: Todo App Review, Habits, and Deployment
 
 ## Context
-We are building a multi-user todo app (Next.js App Router + TypeScript + Tailwind, Supabase Postgres/Auth via `@supabase/ssr`, hosted on Vercel, developed locally against the Supabase CLI Docker stack). Its main purpose, beyond tracking todos, is to make it **easy to review completed todos and see which project, goal, habit, etc. they belong to**.
+We are building a multi-user todo app (Next.js App Router + TypeScript + Tailwind, Supabase Postgres/Auth via `@supabase/ssr`, hosted on Vercel, developed locally against a hosted Supabase project, ref `ikskdeuslqfakakhlmra`). Its main purpose, beyond tracking todos, is to make it **easy to review completed todos and see which project, goal, habit, etc. they belong to**.
 
 This file covers the features that deliver that purpose (the Review view), habit recurrence, and production deployment.
 
@@ -103,7 +103,7 @@ Create habit "Stretch" with recurrence daily starting today. Load `/todos` → "
 ### Description
 Move from local-only to production. Depends only on Phases 1–4 being complete (can run any time after; re-run `db push` after later phases add migrations).
 
-- Create a hosted Supabase project (user action in the Supabase dashboard — requires account access). `npx supabase login`, `npx supabase link --project-ref <ref>`, `npx supabase db push` to apply all migrations from `supabase/migrations/`.
+- The hosted Supabase project already exists and is linked, with migrations applied via `npm run db:push`. Decide here whether to keep it as production or create a separate production project and push all migrations to it.
 - Configure hosted Auth: Site URL = production Vercel URL; redirect URLs include `https://<prod-domain>/auth/confirm` and the Vercel preview wildcard (`https://*-<team>.vercel.app/**`); configure SMTP or accept Supabase's rate-limited default sender for now.
 - `vercel link`, then set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or publishable key) for Production and Preview via `vercel env add`. Connect the GitHub repo for auto-deploys if desired (requires a remote; none exists at plan time).
 - Never push `supabase/seed.sql` demo data to production.
@@ -117,7 +117,7 @@ Open the production URL → sign up with a real email → receive confirmation �
 - `docs/local-development.md` — counterpart for local
 
 ### Implementation Steps
-- [ ] User creates hosted Supabase project; link and `db push`
+- [ ] Decide on a separate production project; if yes, create it, link it, and `db push`
 - [ ] Configure hosted Auth URLs (and SMTP if wanted)
 - [ ] `vercel link`; add env vars for Production + Preview; `vercel --prod`
 - [ ] Write `docs/deployment.md` (one-time setup, how to ship new migrations with `db push`, env vars, auth URL config); link from `CLAUDE.md`
