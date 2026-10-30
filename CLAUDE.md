@@ -10,6 +10,7 @@
 ## Detailed docs
 
 - [Local development](docs/local-development.md) — running the app against hosted Supabase, DB scripts, migrations, Supabase client helpers
+- [Auth](docs/auth.md) — sign-up and login flow, hosted auth settings, protecting pages, Cache Components rules, RLS convention
 
 ## Next.js
 @AGENTS.md

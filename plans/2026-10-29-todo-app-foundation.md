@@ -78,19 +78,19 @@ Visit http://localhost:3000 → redirected to `/login`. Sign up with a new email
 - `docs/local-development.md` — add mail catcher URL
 
 ### Implementation Steps
-- [ ] Write profiles migration (table, RLS, trigger); `npm run db:reset`; `npm run db:types`
-- [ ] Set `site_url`/`additional_redirect_urls` in `supabase/config.toml` for `http://localhost:3000`
-- [ ] Build login/signup pages + server actions + `/auth/confirm` route
-- [ ] Build `(app)` layout with auth guard, header, sign-out
-- [ ] Add timezone capture (small client component calling a server action)
-- [ ] Delete `/health` route
-- [ ] Write `docs/auth.md` (flow, local mail catcher, RLS convention: every user-owned table has `user_id uuid not null default auth.uid()` + policies `user_id = auth.uid()`); link from `CLAUDE.md`
-- [ ] Commit (migration, auth UI, docs)
+- [x] Write profiles migration (table, RLS, trigger); `npm run db:reset`; `npm run db:types`
+- [x] Set `site_url`/`additional_redirect_urls` in `supabase/config.toml` for `http://localhost:3000`
+- [x] Build login/signup pages + server actions + `/auth/confirm` route
+- [x] Build `(app)` layout with auth guard, header, sign-out
+- [x] Add timezone capture (small client component calling a server action)
+- [x] Delete `/health` route
+- [x] Write `docs/auth.md` (flow, local mail catcher, RLS convention: every user-owned table has `user_id uuid not null default auth.uid()` + policies `user_id = auth.uid()`); link from `CLAUDE.md`
+- [x] Commit (migration, auth UI, docs)
 
 ### Verification Steps
 - [ ] Full sign-up → confirm → sign-in → sign-out flow works as described
-- [ ] Two different users can sign up; in SQL (`select * from profiles` as each user via Studio's "impersonate" or the REST API with each JWT) each sees only their own profile
-- [ ] Wrong password shows an error message, not a crash
+- [x] Two different users can sign up; in SQL (`select * from profiles` as each user via Studio's "impersonate" or the REST API with each JWT) each sees only their own profile
+- [x] Wrong password shows an error message, not a crash
 
 ---
 

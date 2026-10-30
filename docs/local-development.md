@@ -24,6 +24,8 @@ npm run dev                  # http://localhost:3000
 | `npm run db:push` | Apply pending migrations to the hosted project |
 | `npm run db:types` | Regenerate `src/lib/database.types.ts` from the hosted schema |
 
+Run `db:new` from an interactive terminal; in a script it waits on stdin unless you add `</dev/null`.
+
 `npx supabase db reset --linked` wipes the hosted database, so there is deliberately no script for it.
 
 ## Schema changes
@@ -52,7 +54,3 @@ grant select, insert, update, delete on public.things to authenticated;
 - `src/lib/supabase/server.ts` — `createClient()` for Server Components, Server Functions, and Route Handlers. Create one per request.
 - `src/lib/supabase/client.ts` — `createClient()` for Client Components.
 - `src/lib/supabase/proxy.ts` + `src/proxy.ts` — refreshes the auth session cookie on every request. (Next.js 16 renamed `middleware.ts` to `proxy.ts`.)
-
-## Smoke test
-
-`curl http://localhost:3000/health` should return `{"ok":true}`. (Temporary route; removed once auth lands.)
