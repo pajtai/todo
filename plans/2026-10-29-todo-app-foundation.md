@@ -88,7 +88,7 @@ Visit http://localhost:3000 → redirected to `/login`. Sign up with a new email
 - [x] Commit (migration, auth UI, docs)
 
 ### Verification Steps
-- [ ] Full sign-up → confirm → sign-in → sign-out flow works as described
+- [x] Full sign-up → confirm → sign-in → sign-out flow works as described
 - [x] Two different users can sign up; in SQL (`select * from profiles` as each user via Studio's "impersonate" or the REST API with each JWT) each sees only their own profile
 - [x] Wrong password shows an error message, not a crash
 

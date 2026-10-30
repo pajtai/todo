@@ -118,7 +118,7 @@ Open the production URL → sign up with a real email → receive confirmation �
 
 ### Implementation Steps
 - [ ] Decide on a separate production project; if yes, create it, link it, and `db push`
-- [ ] Configure hosted Auth URLs (and SMTP if wanted)
+- [ ] Configure hosted Auth URLs and custom SMTP (required for open sign-up: the default sender only delivers to organization members)
 - [ ] `vercel link`; add env vars for Production + Preview; `vercel --prod`
 - [ ] Write `docs/deployment.md` (one-time setup, how to ship new migrations with `db push`, env vars, auth URL config); link from `CLAUDE.md`
 - [ ] Commit docs
