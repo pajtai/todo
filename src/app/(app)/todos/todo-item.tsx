@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
+import { AREA_TYPE_LABELS, AREA_TYPES, type AreaOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
+import { AreaChip } from "../area-chip";
 import {
   deleteTodo,
   setTodoCompleted,
@@ -12,9 +14,14 @@ import {
 export type Todo = Pick<
   Tables<"todos">,
   "id" | "title" | "notes" | "due_on" | "completed_at"
->;
+> & { areas: AreaOption[] };
 
-export function TodoItem({ todo }: { todo: Todo }) {
+type TodoItemProps = {
+  todo: Todo;
+  areaOptions: AreaOption[];
+};
+
+export function TodoItem({ todo, areaOptions }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
@@ -43,7 +50,11 @@ export function TodoItem({ todo }: { todo: Todo }) {
   if (editing) {
     return (
       <li className="py-2">
-        <EditForm todo={todo} onDone={() => setEditing(false)} />
+        <EditForm
+          todo={todo}
+          areaOptions={areaOptions}
+          onDone={() => setEditing(false)}
+        />
       </li>
     );
   }
@@ -84,6 +95,13 @@ export function TodoItem({ todo }: { todo: Todo }) {
           Delete
         </button>
       </div>
+      {todo.areas.length > 0 && (
+        <div className="ml-7 flex flex-wrap gap-1.5">
+          {todo.areas.map((area) => (
+            <AreaChip key={area.id} area={area} />
+          ))}
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-sm text-red-600">
           {error}
@@ -93,7 +111,17 @@ export function TodoItem({ todo }: { todo: Todo }) {
   );
 }
 
-function EditForm({ todo, onDone }: { todo: Todo; onDone: () => void }) {
+type EditFormProps = TodoItemProps & { onDone: () => void };
+
+function EditForm({ todo, areaOptions, onDone }: EditFormProps) {
+  // Areas already on the todo stay listed even if archived. Otherwise saving
+  // would silently detach them.
+  const activeIds = new Set(areaOptions.map((area) => area.id));
+  const pickable = [
+    ...areaOptions,
+    ...todo.areas.filter((area) => !activeIds.has(area.id)),
+  ];
+  const attachedIds = new Set(todo.areas.map((area) => area.id));
   const inputClass = "rounded border border-gray-300 px-3 py-2 text-black";
   const [state, formAction, pending] = useActionState(
     async (_previous: TodoActionState, formData: FormData) => {
@@ -135,6 +163,34 @@ function EditForm({ todo, onDone }: { todo: Todo; onDone: () => void }) {
           className={inputClass}
         />
       </label>
+      {pickable.length > 0 && (
+        <fieldset className="flex flex-col gap-2 text-sm">
+          <legend className="mb-1">Areas</legend>
+          {AREA_TYPES.map((type) => {
+            const ofType = pickable.filter((area) => area.type === type);
+            return (
+              ofType.length > 0 && (
+                <div key={type} className="flex flex-wrap items-center gap-3">
+                  <span className="text-gray-500">
+                    {AREA_TYPE_LABELS[type]}
+                  </span>
+                  {ofType.map((area) => (
+                    <label key={area.id} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        name="area_ids"
+                        value={area.id}
+                        defaultChecked={attachedIds.has(area.id)}
+                      />
+                      {area.name}
+                    </label>
+                  ))}
+                </div>
+              )
+            );
+          })}
+        </fieldset>
+      )}
       {state.error && (
         <p role="alert" className="text-sm text-red-600">
           {state.error}

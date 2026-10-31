@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isUuid } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,8 +35,28 @@ export async function createTodo(
     return { error: "Couldn't add that todo. Try again.", title };
   }
 
-  revalidatePath("/todos");
+  revalidatePath("/", "layout");
   return {};
+}
+
+async function setTodoAreas(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  todoId: string,
+  areaIds: string[],
+) {
+  const remove = supabase.from("todo_areas").delete().eq("todo_id", todoId);
+  const { error } = await (areaIds.length > 0
+    ? remove.not("area_id", "in", `(${areaIds.join(",")})`)
+    : remove);
+  if (error || areaIds.length === 0) {
+    return error;
+  }
+
+  const { error: upsertError } = await supabase.from("todo_areas").upsert(
+    areaIds.map((areaId) => ({ todo_id: todoId, area_id: areaId })),
+    { onConflict: "todo_id,area_id", ignoreDuplicates: true },
+  );
+  return upsertError;
 }
 
 export async function updateTodo(
@@ -62,7 +83,13 @@ export async function updateTodo(
     return { error: "Couldn't save your changes. Try again." };
   }
 
-  revalidatePath("/todos");
+  const areaIds = formData.getAll("area_ids").filter(isUuid);
+  const areasError = await setTodoAreas(supabase, id, areaIds);
+  if (areasError) {
+    return { error: "Saved, but couldn't update the areas. Try again." };
+  }
+
+  revalidatePath("/", "layout");
   return {};
 }
 
@@ -82,7 +109,7 @@ export async function setTodoCompleted(
     return { error: "Couldn't update that todo. Try again." };
   }
 
-  revalidatePath("/todos");
+  revalidatePath("/", "layout");
   return {};
 }
 
@@ -94,6 +121,6 @@ export async function deleteTodo(id: string): Promise<TodoActionState> {
     return { error: "Couldn't delete that todo. Try again." };
   }
 
-  revalidatePath("/todos");
+  revalidatePath("/", "layout");
   return {};
 }
