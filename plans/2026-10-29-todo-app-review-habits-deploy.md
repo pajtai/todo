@@ -5,7 +5,7 @@ We are building a multi-user todo app (Next.js App Router + TypeScript + Tailwin
 
 This file covers the features that deliver that purpose (the Review view), habit recurrence, and production deployment.
 
-**Cross-plan execution sequence:** execute `plans/2026-10-29-todo-app-foundation.md` Phases 1–4 first. Then execute this file's Phases 5 → 6 → 7 in order. Phase 7 (deploy) only depends on Phases 1–4 and can be pulled earlier if a hosted preview is wanted sooner.
+**Cross-plan execution sequence:** execute `~/.claude/plans/2026-10-29-todo-app-foundation.md` (complete) Phases 1–4 first. Then execute this file's Phases 5 → 6 → 7 in order. Phase 7 (deploy) only depends on Phases 1–4 and can be pulled earlier if a hosted preview is wanted sooner.
 
 What exists after the foundation plan:
 - `profiles` (with `timezone`), `todos` (with `completed_at timestamptz`), `areas` (`type` enum: project/goal/habit/area/other, `parent_id` hierarchy), `todo_areas` join, and the `area_paths` view (`area_id`, `ancestor_id`, `depth`) — all RLS-protected by `user_id = auth.uid()`. Schema lives in `supabase/migrations/`, documented in `docs/data-model.md`.
