@@ -39,6 +39,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      areas: {
+        Row: {
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          type: Database["public"]["Enums"]["area_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          type: Database["public"]["Enums"]["area_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          type?: Database["public"]["Enums"]["area_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "areas_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -59,6 +106,39 @@ export type Database = {
           timezone?: string
         }
         Relationships: []
+      }
+      todo_areas: {
+        Row: {
+          area_id: string
+          todo_id: string
+          user_id: string
+        }
+        Insert: {
+          area_id: string
+          todo_id: string
+          user_id?: string
+        }
+        Update: {
+          area_id?: string
+          todo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "todo_areas_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todo_areas_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       todos: {
         Row: {
@@ -95,13 +175,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      area_paths: {
+        Row: {
+          ancestor_id: string | null
+          area_id: string | null
+          depth: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      area_type: "project" | "goal" | "habit" | "area" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -231,6 +318,8 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      area_type: ["project", "goal", "habit", "area", "other"],
+    },
   },
 } as const
