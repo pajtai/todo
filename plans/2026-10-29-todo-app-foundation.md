@@ -156,18 +156,18 @@ Create a goal "Get fit", a project "Marathon training" with parent "Get fit", an
 - `docs/data-model.md` — extend
 
 ### Implementation Steps
-- [ ] Write areas migration (enum, tables, cycle trigger, RLS, `area_paths` view); reset DB; regenerate types
-- [ ] Add pgTAP tests: cross-user `todo_areas` insert rejected; cycle rejected
-- [ ] Build areas list/create/edit/archive UI and area detail page
-- [ ] Add area chips, picker, and `?area=` filter to `/todos`
-- [ ] Add seed data in `supabase/seed.sql` (a demo user is optional; at minimum document how to create sample areas) — useful for Phase 5 review testing
-- [ ] Update `docs/data-model.md` with areas, `todo_areas`, `area_paths`, and the hierarchy rules
-- [ ] Commit (migration + tests, areas UI, todo integration, docs)
+- [x] Write areas migration (enum, tables, cycle trigger, RLS, `area_paths` view); reset DB; regenerate types
+- [x] Add pgTAP tests: cross-user `todo_areas` insert rejected; cycle rejected
+- [x] Build areas list/create/edit/archive UI and area detail page
+- [x] Add area chips, picker, and `?area=` filter to `/todos`
+- [x] Add seed data in `supabase/seed.sql` (a demo user is optional; at minimum document how to create sample areas) — useful for Phase 5 review testing
+- [x] Update `docs/data-model.md` with areas, `todo_areas`, `area_paths`, and the hierarchy rules
+- [x] Commit (migration + tests, areas UI, todo integration, docs)
 
 ### Verification Steps
-- [ ] Manual flow above works
-- [ ] `npm run db:test` passes including new tests
-- [ ] Archiving an area hides it from pickers but keeps it on existing todos
-- [ ] Deleting an area removes its chips from todos without deleting the todos
+- [x] Manual flow above works
+- [x] `npm run db:test` passes including new tests
+- [x] Archiving an area hides it from pickers but keeps it on existing todos
+- [x] Deleting an area removes its chips from todos without deleting the todos
 
 ---
