@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +31,15 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
-        <span className="font-semibold">Todo</span>
+        <nav className="flex items-center gap-4">
+          <span className="font-semibold">Todo</span>
+          <Link href="/todos" className="text-sm hover:underline">
+            Todos
+          </Link>
+          <Link href="/areas" className="text-sm hover:underline">
+            Areas
+          </Link>
+        </nav>
         <Suspense>
           <UserMenu />
         </Suspense>
