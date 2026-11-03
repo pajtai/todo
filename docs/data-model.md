@@ -23,6 +23,7 @@ One row per user, created by the `on_auth_user_created` trigger on `auth.users`.
 | `notes` | Optional |
 | `due_on` | Optional date, with no time or timezone |
 | `completed_at` | Null means open. A timestamp, not a boolean, because the Review view needs to know when a todo was done |
+| `habit_area_id`, `occurrence_date` | Set on todos generated from a habit. Unique per user, habit, and date. See [habits.md](habits.md) |
 | `created_at`, `updated_at` | `updated_at` is maintained by the `set_updated_at()` trigger |
 
 Unchecking a todo clears `completed_at`, and checking it again records the new time.
@@ -40,6 +41,7 @@ The generic grouping for todos. `type` is the `area_type` enum: `project`, `goal
 | `color` | Optional `#rrggbb` |
 | `description` | Optional |
 | `archived_at` | Null means active |
+| `recurrence`, `recurrence_days`, `habit_title`, `starts_on` | Habit rule; only allowed when `type = 'habit'`. See [habits.md](habits.md) |
 | `created_at`, `updated_at` | `updated_at` is maintained by a trigger |
 
 ### Hierarchy rules
@@ -69,6 +71,14 @@ Each area paired with itself (depth 0) and every ancestor (depth 1, 2, …). It'
 | Marathon training | Get fit | 1 |
 
 Area pages and the `?area=` filter on `/todos` show only todos attached directly to that area, not those on its descendants. Use `area_paths` when you need roll-up.
+
+## Embedding areas in todo queries
+
+`todos` relates to `areas` two ways: through `todo_areas` and through `habit_area_id`. So a PostgREST embed has to name the join table: `areas!todo_areas(...)`. A bare `areas(...)` fails as ambiguous.
+
+## Habit functions
+
+`user_today()`, `ensure_habit_todos()`, `habit_occurrences()`, and `habit_streaks()`. See [habits.md](habits.md).
 
 ## `review_completed` function
 

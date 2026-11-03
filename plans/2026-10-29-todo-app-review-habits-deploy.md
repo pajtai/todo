@@ -82,18 +82,18 @@ Create habit "Stretch" with recurrence daily starting today. Load `/todos` → "
 - `src/lib/review.ts` — add habit completion rate
 
 ### Implementation Steps
-- [ ] Write habits migration (columns, constraints, unique index, `ensure_habit_todos`, `habit_streaks`); reset DB; regenerate types
-- [ ] pgTAP tests: idempotency, weekday rule, timezone "today", streak calculation, cross-user isolation
-- [ ] Add recurrence fields to area form; call `ensure_habit_todos` from `/todos` and `/review` server components
-- [ ] Habit detail: streak + 30-day grid; habit icon on todos; completion rate in Review
-- [ ] Update `docs/data-model.md` and add `docs/habits.md` (generation semantics, decisions on missed days); link from `CLAUDE.md`
-- [ ] Commit (migration + tests, UI, docs)
+- [x] Write habits migration (columns, constraints, unique index, `ensure_habit_todos`, `habit_streaks`); reset DB; regenerate types
+- [x] pgTAP tests: idempotency, weekday rule, timezone "today", streak calculation, cross-user isolation
+- [x] Add recurrence fields to area form; call `ensure_habit_todos` from `/todos` and `/review` server components
+- [x] Habit detail: streak + 30-day grid; habit icon on todos; completion rate in Review
+- [x] Update `docs/data-model.md` and add `docs/habits.md` (generation semantics, decisions on missed days); link from `CLAUDE.md`
+- [x] Commit (migration + tests, UI, docs)
 
 ### Verification Steps
-- [ ] Manual scenario above works; reloading never creates duplicates
-- [ ] `npm run db:test` passes
-- [ ] Changing a habit's recurrence doesn't delete past completed occurrences
-- [ ] Archiving a habit stops generation
+- [x] Manual scenario above works; reloading never creates duplicates
+- [x] `npm run db:test` passes
+- [x] Changing a habit's recurrence doesn't delete past completed occurrences
+- [x] Archiving a habit stops generation
 
 ---
 
