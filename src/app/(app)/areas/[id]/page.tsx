@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { selectActiveAreas, selectTodos } from "@/lib/todos";
 import { AreaChip } from "../../area-chip";
 import { TodoItem } from "../../todos/todo-item";
+import { HabitStats } from "./habit-stats";
 
 const COMPLETED_LIMIT = 50;
 
@@ -24,7 +25,9 @@ async function AreaDetail({
   const supabase = await createClient();
   const { data: area } = await supabase
     .from("areas")
-    .select("id, name, type, description, archived_at, parent_id")
+    .select(
+      "id, name, type, description, archived_at, parent_id, recurrence, recurrence_days, starts_on",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -100,6 +103,9 @@ async function AreaDetail({
             <AreaChip key={child.id} area={child} />
           ))}
         </div>
+      )}
+      {area.type === "habit" && area.recurrence && (
+        <HabitStats supabase={supabase} areaId={area.id} rule={area} />
       )}
       <section className="flex flex-col gap-1">
         <h2 className="font-medium">Open ({open.data.length})</h2>

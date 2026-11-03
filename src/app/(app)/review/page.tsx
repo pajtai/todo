@@ -29,6 +29,7 @@ import {
   type ReviewState,
   type ReviewTodo,
 } from "@/lib/review";
+import { formatRate, habitRate, type Occurrence } from "@/lib/habits";
 import { createClient } from "@/lib/supabase/server";
 import { AreaChip } from "../area-chip";
 import { AreaSelect } from "./area-select";
@@ -197,10 +198,33 @@ function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
   );
 }
 
-function ByType({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
+type HabitRate = { area: AreaInfo; rate: string };
+
+function ByType({
+  todos,
+  ctx,
+  habits,
+}: {
+  todos: ReviewTodo[];
+  ctx: Ctx;
+  habits: HabitRate[];
+}) {
   const unassigned = todos.filter((todo) => todo.areas.length === 0);
   return (
     <>
+      {habits.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-medium">Habit completion</h2>
+          <ul className="ml-4 flex flex-col gap-1">
+            {habits.map(({ area, rate }) => (
+              <li key={area.id} className="flex items-center gap-2 text-sm">
+                <ReviewChip area={area} ctx={ctx} />
+                <span className="text-gray-500">{rate}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {groupByType(todos).map((group) => (
         <section key={group.type} className="flex flex-col gap-2">
           <h2 className="flex items-center gap-2 font-medium">
@@ -286,12 +310,20 @@ async function Review({
   };
   const { period } = state;
 
-  const [rows, areas] = await Promise.all([
+  // Same lazy generation as /todos, so today's habits count as expected.
+  await supabase.rpc("ensure_habit_todos");
+  const [rows, areas, occurrences] = await Promise.all([
     supabase.rpc("review_completed", { p_from: period.from, p_to: period.to }),
     supabase
       .from("areas")
-      .select("id, name, type, archived_at")
+      .select("id, name, type, color, parent_id, archived_at")
       .order("name"),
+    state.group === "type"
+      ? supabase.rpc("habit_occurrences", {
+          p_from: period.from,
+          p_to: period.to,
+        })
+      : null,
   ]);
 
   if (rows.error) {
@@ -318,6 +350,20 @@ async function Review({
     ),
   };
   const todayRange = { from: today, to: today };
+  const occurrencesByHabit = Map.groupBy(
+    (occurrences?.data ?? []) as Occurrence[],
+    (o) => o.area_id,
+  );
+  const showHabits =
+    (!state.type || state.type === "habit") &&
+    (!state.area || occurrencesByHabit.has(state.area));
+  const habitRates: HabitRate[] = showHabits
+    ? (areas.data ?? []).flatMap((area) => {
+        const list = occurrencesByHabit.get(area.id);
+        if (!list || (state.area && state.area !== area.id)) return [];
+        return [{ area, rate: formatRate(habitRate(list, today)) }];
+      })
+    : [];
   const hidden = { group: state.group, type: state.type, area: state.area };
 
   return (
@@ -477,7 +523,9 @@ async function Review({
           </p>
           <div className="flex flex-col gap-6">
             {state.group === "area" && <ByArea todos={todos} ctx={ctx} />}
-            {state.group === "type" && <ByType todos={todos} ctx={ctx} />}
+            {state.group === "type" && (
+              <ByType todos={todos} ctx={ctx} habits={habitRates} />
+            )}
             {state.group === "day" && <ByDay todos={todos} ctx={ctx} />}
           </div>
         </>

@@ -14,7 +14,7 @@ import {
 export type Todo = Pick<
   Tables<"todos">,
   "id" | "title" | "notes" | "due_on" | "completed_at"
-> & { areas: AreaOption[] };
+> & { areas: AreaOption[]; habit_area_id?: string | null };
 
 type TodoItemProps = {
   todo: Todo;
@@ -75,6 +75,11 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
           className="flex flex-1 flex-col text-left"
         >
           <span className={completed ? "text-gray-500 line-through" : ""}>
+            {todo.habit_area_id && (
+              <span title="Repeating habit" className="mr-1 text-gray-500">
+                ↻<span className="sr-only">Habit:</span>
+              </span>
+            )}
             {todo.title}
           </span>
           {todo.notes && (

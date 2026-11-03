@@ -62,6 +62,9 @@ async function TodoLists({
   const areaId = isUuid(area) ? area : undefined;
   const user = await getCurrentUser();
   const supabase = await createClient();
+  // Lazily creates today's habit todos before listing. Idempotent, and a
+  // failure only means habits are missing, so it doesn't block the page.
+  await supabase.rpc("ensure_habit_todos");
 
   const [open, recent, profile, options] = await Promise.all([
     selectTodos(supabase, areaId)

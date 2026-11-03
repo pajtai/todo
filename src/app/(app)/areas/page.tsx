@@ -12,7 +12,9 @@ async function AreaLists() {
   const supabase = await createClient();
   const { data: areas, error } = await supabase
     .from("areas")
-    .select("id, name, type, color, parent_id, description, archived_at")
+    .select(
+      "id, name, type, color, parent_id, description, archived_at, recurrence, recurrence_days, habit_title, starts_on",
+    )
     .order("name");
 
   if (error) {
