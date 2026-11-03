@@ -185,7 +185,16 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      review_completed: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          areas: Json
+          completed_at: string
+          completed_local_date: string
+          title: string
+          todo_id: string
+        }[]
+      }
     }
     Enums: {
       area_type: "project" | "goal" | "habit" | "area" | "other"
