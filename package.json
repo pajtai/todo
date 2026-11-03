@@ -10,7 +10,8 @@
     "db:types": "supabase gen types typescript --linked > src/lib/database.types.ts",
     "db:push": "supabase db push --linked",
     "db:new": "supabase migration new",
-    "db:test": "./scripts/db-test.sh"
+    "db:test": "./scripts/db-test.sh",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -22,7 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
@@ -30,6 +31,7 @@
     "eslint-config-next": "16.4.3",
     "supabase": "^2.122.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
   }
 }
