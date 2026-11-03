@@ -45,9 +45,13 @@ export type Database = {
           color: string | null
           created_at: string
           description: string | null
+          habit_title: string | null
           id: string
           name: string
           parent_id: string | null
+          recurrence: string | null
+          recurrence_days: number[] | null
+          starts_on: string | null
           type: Database["public"]["Enums"]["area_type"]
           updated_at: string
           user_id: string
@@ -57,9 +61,13 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          habit_title?: string | null
           id?: string
           name: string
           parent_id?: string | null
+          recurrence?: string | null
+          recurrence_days?: number[] | null
+          starts_on?: string | null
           type: Database["public"]["Enums"]["area_type"]
           updated_at?: string
           user_id?: string
@@ -69,9 +77,13 @@ export type Database = {
           color?: string | null
           created_at?: string
           description?: string | null
+          habit_title?: string | null
           id?: string
           name?: string
           parent_id?: string | null
+          recurrence?: string | null
+          recurrence_days?: number[] | null
+          starts_on?: string | null
           type?: Database["public"]["Enums"]["area_type"]
           updated_at?: string
           user_id?: string
@@ -145,8 +157,10 @@ export type Database = {
           completed_at: string | null
           created_at: string
           due_on: string | null
+          habit_area_id: string | null
           id: string
           notes: string | null
+          occurrence_date: string | null
           title: string
           updated_at: string
           user_id: string
@@ -155,8 +169,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           due_on?: string | null
+          habit_area_id?: string | null
           id?: string
           notes?: string | null
+          occurrence_date?: string | null
           title: string
           updated_at?: string
           user_id?: string
@@ -165,13 +181,23 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           due_on?: string | null
+          habit_area_id?: string | null
           id?: string
           notes?: string | null
+          occurrence_date?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "todos_habit_area_id_fkey"
+            columns: ["habit_area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -185,6 +211,33 @@ export type Database = {
       }
     }
     Functions: {
+      ensure_habit_todos: { Args: { p_on?: string }; Returns: number }
+      habit_occurrences: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          area_id: string
+          day: string
+          done: boolean
+        }[]
+      }
+      habit_occurs_on: {
+        Args: {
+          p_date: string
+          p_days: number[]
+          p_recurrence: string
+          p_starts_on: string
+        }
+        Returns: boolean
+      }
+      habit_streaks: {
+        Args: never
+        Returns: {
+          area_id: string
+          completed_30: number
+          current_streak: number
+          expected_30: number
+        }[]
+      }
       review_completed: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -195,6 +248,7 @@ export type Database = {
           todo_id: string
         }[]
       }
+      user_today: { Args: never; Returns: string }
     }
     Enums: {
       area_type: "project" | "goal" | "habit" | "area" | "other"
