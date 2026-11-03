@@ -148,6 +148,25 @@ begin
 end;
 $$;
 
+-- Completions recorded before starts_on still count toward the streak.
+insert into public.areas (id, name, type, recurrence, starts_on) values
+  ('00000000-0000-4000-8000-0000000000a6', 'Backfilled', 'habit', 'daily', public.user_today());
+insert into public.todos (title, habit_area_id, occurrence_date, completed_at) values
+  ('b', '00000000-0000-4000-8000-0000000000a6', public.user_today() - 1, now()),
+  ('b', '00000000-0000-4000-8000-0000000000a6', public.user_today() - 2, now()),
+  ('b', '00000000-0000-4000-8000-0000000000a6', public.user_today(), now());
+
+do $$
+declare
+  s record;
+begin
+  select * into s from public.habit_streaks() where area_id = '00000000-0000-4000-8000-0000000000a6';
+  if s.current_streak <> 3 or s.expected_30 <> 3 then
+    raise exception 'backfilled completions not counted: %', s;
+  end if;
+end;
+$$;
+
 -- Another user: can't see A's habits and can't block A's occurrences.
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000b","role":"authenticated"}', true);
 insert into public.todos (title, habit_area_id, occurrence_date) values

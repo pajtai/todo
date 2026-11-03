@@ -229,6 +229,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      habit_rule_matches: {
+        Args: {
+          p_date: string
+          p_days: number[]
+          p_recurrence: string
+          p_starts_on: string
+        }
+        Returns: boolean
+      }
       habit_streaks: {
         Args: never
         Returns: {
