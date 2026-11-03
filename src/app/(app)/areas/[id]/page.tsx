@@ -78,6 +78,12 @@ async function AreaDetail({
           {AREA_TYPE_LABELS[area.type]}
           {area.archived_at && " · Archived"}
         </p>
+        <Link
+          href={`/review?area=${area.id}`}
+          className="text-sm underline"
+        >
+          Review completed todos, including sub-areas
+        </Link>
         {area.description && (
           <p className="whitespace-pre-wrap">{area.description}</p>
         )}

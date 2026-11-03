@@ -39,6 +39,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <Link href="/areas" className="text-sm hover:underline">
             Areas
           </Link>
+          <Link href="/review" className="text-sm hover:underline">
+            Review
+          </Link>
         </nav>
         <Suspense>
           <UserMenu />
