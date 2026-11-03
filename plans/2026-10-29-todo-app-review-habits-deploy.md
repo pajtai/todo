@@ -41,19 +41,19 @@ Using seed data or manually created data: complete three todos today (one in "Ma
 - `docs/data-model.md` — extend
 
 ### Implementation Steps
-- [ ] Write `review_completed` function migration; reset DB; regenerate types
-- [ ] pgTAP tests: timezone boundary case (completion at 23:30 local in a non-UTC zone), roll-up includes ancestors, other users' todos excluded
-- [ ] Build `src/lib/review.ts` grouping helpers (by area tree with roll-up counts, by type, by day) with Vitest unit tests (add Vitest if not present)
-- [ ] Build `/review` page with period selector, group-by toggle, filters, summary
-- [ ] Add nav link and area-detail link
-- [ ] Write `docs/review.md` (how periods/timezones/roll-up work); link from `CLAUDE.md`
-- [ ] Commit (SQL + tests, grouping lib + tests, UI, docs)
+- [x] Write `review_completed` function migration; reset DB; regenerate types
+- [x] pgTAP tests: timezone boundary case (completion at 23:30 local in a non-UTC zone), roll-up includes ancestors, other users' todos excluded
+- [x] Build `src/lib/review.ts` grouping helpers (by area tree with roll-up counts, by type, by day) with Vitest unit tests (add Vitest if not present)
+- [x] Build `/review` page with period selector, group-by toggle, filters, summary
+- [x] Add nav link and area-detail link
+- [x] Write `docs/review.md` (how periods/timezones/roll-up work); link from `CLAUDE.md`
+- [x] Commit (SQL + tests, grouping lib + tests, UI, docs)
 
 ### Verification Steps
-- [ ] Manual scenario above produces the stated counts
-- [ ] `npm run db:test` and `npx vitest run` pass
-- [ ] Changing `profiles.timezone` shifts late-night completions to the correct day
-- [ ] Empty period shows a friendly empty state
+- [x] Manual scenario above produces the stated counts
+- [x] `npm run db:test` and `npx vitest run` pass
+- [x] Changing `profiles.timezone` shifts late-night completions to the correct day
+- [x] Empty period shows a friendly empty state
 
 ---
 

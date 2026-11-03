@@ -23,6 +23,7 @@ npm run dev                  # http://localhost:3000
 | `npm run db:new <name>` | Create `supabase/migrations/<timestamp>_<name>.sql` |
 | `npm run db:push` | Apply pending migrations to the hosted project |
 | `npm run db:types` | Regenerate `src/lib/database.types.ts` from the hosted schema |
+| `npm test` | Run the Vitest unit tests (`src/**/*.test.ts`) |
 | `npm run db:test` | Run the self-checking SQL tests in `supabase/tests/` against the hosted project (each rolls back) |
 
 Run `db:new` from an interactive terminal; in a script it waits on stdin unless you add `</dev/null`.
