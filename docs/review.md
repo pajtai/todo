@@ -37,6 +37,15 @@ The `review_completed` rows are grouped in TypeScript (`src/lib/review.ts`, unit
 
 A todo attached to several areas appears under each of them, so the counts in the tree can add up to more than the total.
 
+## Editing
+
+Click a todo on `/review` to edit it. It opens the same form as `/todos` (`EditForm` in `todos/todo-item.tsx`) with one more field, **Done at**, a `datetime-local` input.
+
+- The page shows and accepts Done at on the wall clock of `profiles.timezone`, not the browser's, so it matches the times in the review. `src/lib/zoned-time.ts` converts in both directions (unit-tested). A time skipped by a DST jump moves forward.
+- `updateTodo` changes `completed_at` only when the form sends `completed_at`, so `/todos` edits never touch it. Malformed or future values are rejected.
+- `review_completed` doesn't return `notes`, `due_on` or `habit_area_id`, so the page loads them from `todos` for a UTC window one day wider than the period on each side. If that query fails, the page shows an error rather than a form that would clear those fields on save.
+- Moving Done at out of the period removes the todo from this review after saving.
+
 ## Filters
 
 - `?type=habit`: todos with any area of that type, attached directly or as an ancestor.
