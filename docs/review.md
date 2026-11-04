@@ -31,7 +31,7 @@ Prev and next arrows step by one period (for a custom range, by its length). Inv
 
 The `review_completed` rows are grouped in TypeScript (`src/lib/review.ts`, unit-tested in `src/lib/review.test.ts`, run with `npm test`):
 
-- **By area** (default, `?group=area`): a tree that follows `parent_id`. Each area's count is the number of distinct todos in it **or any area below it**, so a todo in "Marathon training" also counts toward "Get fit". Todos are listed under the area they're attached to directly. Todos with no area go under "Unassigned".
+- **By area** (default, `?group=area`): a grid (`review/review-grid.tsx`) with one column per day of the period and one row per area and todo. Area rows follow `parent_id`, and each can be collapsed or expanded (plus "Collapse all"). A todo row has a filled box on the day it was done. An area row's box is filled (in the area's color, with a number when more than one) when any todo in it **or any area below it** was done that day, so a todo in "Marathon training" also fills "Get fit". The count beside an area uses the same roll-up. Todos are listed under the area they're attached to directly. Todos with no area go under "Unassigned". Long periods scroll sideways with the name column pinned.
 - **By type** (`?group=type`): for each area type, the areas of that type with the todos that roll up to them.
 - **By day** (`?group=day`): newest day first, each todo with breadcrumbs such as "Get fit › Marathon training".
 
@@ -39,7 +39,7 @@ A todo attached to several areas appears under each of them, so the counts in th
 
 ## Editing
 
-Click a todo on `/review` to edit it. It opens the same form as `/todos` (`EditForm` in `todos/todo-item.tsx`) with one more field, **Done at**, a `datetime-local` input.
+Click a todo on `/review` (its name in the grid, or the line in the other groupings) to edit it. It opens the same form as `/todos` (`EditForm` in `todos/todo-item.tsx`) with one more field, **Done at**, a `datetime-local` input.
 
 - The page shows and accepts Done at on the wall clock of `profiles.timezone`, not the browser's, so it matches the times in the review. `src/lib/zoned-time.ts` converts in both directions (unit-tested). A time skipped by a DST jump moves forward.
 - `updateTodo` changes `completed_at` only when the form sends `completed_at`, so `/todos` edits never touch it. Malformed or future values are rejected.
