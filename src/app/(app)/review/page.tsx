@@ -11,6 +11,8 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   addDays,
   breadcrumbs,
+  countByDay,
+  datesInRange,
   filterTodos,
   formatDay,
   groupByArea,
@@ -35,7 +37,14 @@ import { formatRate, habitRate, type Occurrence } from "@/lib/habits";
 import { createClient } from "@/lib/supabase/server";
 import { toLocalInput } from "@/lib/zoned-time";
 import { AreaChip } from "../area-chip";
+import type { Todo } from "../todos/todo-item";
 import { AreaSelect } from "./area-select";
+import {
+  ReviewGrid,
+  type GridDay,
+  type GridGroup,
+  type GridTodo,
+} from "./review-grid";
 import { ReviewTodoItem } from "./review-todo-item";
 
 const SINGULAR: Record<AreaType, string> = {
@@ -95,6 +104,22 @@ type TodoDetails = {
   habit_area_id: string | null;
 };
 
+// What the edit form needs: the row plus details `review_completed` lacks.
+function editable(todo: ReviewTodo, ctx: Ctx): Todo {
+  const details = ctx.details.get(todo.todo_id);
+  return {
+    id: todo.todo_id,
+    title: todo.title,
+    completed_at: todo.completed_at,
+    notes: details?.notes ?? null,
+    due_on: details?.due_on ?? null,
+    habit_area_id: details?.habit_area_id ?? null,
+    areas: todo.areas
+      .filter((area) => area.depth === 0)
+      .map(({ id, name, type, color }) => ({ id, name, type, color })),
+  };
+}
+
 function TodoLine({
   todo,
   ctx,
@@ -112,22 +137,10 @@ function TodoLine({
     minute: "2-digit",
   });
   const paths = showAreas ? breadcrumbs(todo) : [];
-  const details = ctx.details.get(todo.todo_id);
-  const editable = {
-    id: todo.todo_id,
-    title: todo.title,
-    completed_at: todo.completed_at,
-    notes: details?.notes ?? null,
-    due_on: details?.due_on ?? null,
-    habit_area_id: details?.habit_area_id ?? null,
-    areas: todo.areas
-      .filter((area) => area.depth === 0)
-      .map(({ id, name, type, color }) => ({ id, name, type, color })),
-  };
 
   return (
     <ReviewTodoItem
-      todo={editable}
+      todo={editable(todo, ctx)}
       areaOptions={ctx.areaOptions}
       completedAt={toLocalInput(new Date(todo.completed_at), ctx.timeZone)}
       header={
@@ -177,33 +190,6 @@ function Count({ n }: { n: number }) {
   return <span className="text-sm text-gray-500">{n}</span>;
 }
 
-function AreaTree({ nodes, ctx }: { nodes: AreaNode[]; ctx: Ctx }) {
-  return (
-    <ul className="flex flex-col gap-3">
-      {nodes.map((node) => (
-        <li key={node.area.id} className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <ReviewChip area={node.area} ctx={ctx} />
-            <Count n={node.count} />
-          </div>
-          {node.todos.length > 0 && (
-            <ul className="ml-4 divide-y divide-gray-100">
-              {node.todos.map((todo) => (
-                <TodoLine key={todo.todo_id} todo={todo} ctx={ctx} showDate />
-              ))}
-            </ul>
-          )}
-          {node.children.length > 0 && (
-            <div className="ml-4 border-l border-gray-200 pl-3">
-              <AreaTree nodes={node.children} ctx={ctx} />
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function Unassigned({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
   if (todos.length === 0) {
     return null;
@@ -222,14 +208,61 @@ function Unassigned({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
   );
 }
 
+function gridTodo(todo: ReviewTodo, ctx: Ctx): GridTodo {
+  const time = new Date(todo.completed_at).toLocaleTimeString("en-US", {
+    timeZone: ctx.timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return {
+    todo: editable(todo, ctx),
+    date: todo.completed_local_date,
+    doneLabel: `${formatDay(todo.completed_local_date)}, ${time}`,
+    completedAt: toLocalInput(new Date(todo.completed_at), ctx.timeZone),
+  };
+}
+
+function gridGroup(node: AreaNode, ctx: Ctx): GridGroup {
+  return {
+    key: node.area.id,
+    area: node.area,
+    href: ctx.href({ area: node.area.id }),
+    active: node.area.id === ctx.state.area,
+    count: node.count,
+    days: node.days,
+    todos: node.todos.map((todo) => gridTodo(todo, ctx)),
+    children: node.children.map((child) => gridGroup(child, ctx)),
+  };
+}
+
+// Days as columns; a filled box is a completed todo, rolled up to its areas.
 function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
   const { roots, unassigned } = groupByArea(todos);
-  return (
-    <>
-      {roots.length > 0 && <AreaTree nodes={roots} ctx={ctx} />}
-      <Unassigned todos={unassigned} ctx={ctx} />
-    </>
-  );
+  const groups = roots.map((node) => gridGroup(node, ctx));
+  if (unassigned.length > 0) {
+    groups.push({
+      key: "unassigned",
+      count: unassigned.length,
+      days: countByDay(unassigned),
+      todos: unassigned.map((todo) => gridTodo(todo, ctx)),
+      children: [],
+    });
+  }
+  const { from, to } = ctx.state.period;
+  const days: GridDay[] = datesInRange(from, to).map((date) => {
+    const utc = new Date(`${date}T00:00:00Z`);
+    return {
+      date,
+      weekday: utc.toLocaleDateString("en-US", {
+        timeZone: "UTC",
+        weekday: "narrow",
+      }),
+      dayOfMonth: String(utc.getUTCDate()),
+      label: formatDay(date),
+      isToday: date === ctx.today,
+    };
+  });
+  return <ReviewGrid days={days} groups={groups} areaOptions={ctx.areaOptions} />;
 }
 
 type HabitRate = { area: AreaInfo; rate: string };
