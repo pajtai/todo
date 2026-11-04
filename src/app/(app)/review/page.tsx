@@ -4,10 +4,12 @@ import {
   AREA_TYPE_LABELS,
   AREA_TYPES,
   isUuid,
+  type AreaOption,
   type AreaType,
 } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import {
+  addDays,
   breadcrumbs,
   filterTodos,
   formatDay,
@@ -31,8 +33,10 @@ import {
 } from "@/lib/review";
 import { formatRate, habitRate, type Occurrence } from "@/lib/habits";
 import { createClient } from "@/lib/supabase/server";
+import { toLocalInput } from "@/lib/zoned-time";
 import { AreaChip } from "../area-chip";
 import { AreaSelect } from "./area-select";
+import { ReviewTodoItem } from "./review-todo-item";
 
 const SINGULAR: Record<AreaType, string> = {
   goal: "goal",
@@ -79,6 +83,16 @@ type Ctx = {
   today: string;
   timeZone: string;
   href: (changes: HrefChanges) => string;
+  /** Fields the edit form needs that `review_completed` doesn't return. */
+  details: Map<string, TodoDetails>;
+  /** Active areas, offered in the edit form. */
+  areaOptions: AreaOption[];
+};
+
+type TodoDetails = {
+  notes: string | null;
+  due_on: string | null;
+  habit_area_id: string | null;
 };
 
 function TodoLine({
@@ -98,15 +112,35 @@ function TodoLine({
     minute: "2-digit",
   });
   const paths = showAreas ? breadcrumbs(todo) : [];
+  const details = ctx.details.get(todo.todo_id);
+  const editable = {
+    id: todo.todo_id,
+    title: todo.title,
+    completed_at: todo.completed_at,
+    notes: details?.notes ?? null,
+    due_on: details?.due_on ?? null,
+    habit_area_id: details?.habit_area_id ?? null,
+    areas: todo.areas
+      .filter((area) => area.depth === 0)
+      .map(({ id, name, type, color }) => ({ id, name, type, color })),
+  };
 
   return (
-    <li className="flex flex-col gap-1 py-1.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <span>{todo.title}</span>
-        <span className="shrink-0 text-xs text-gray-500">
-          {showDate ? `${formatDay(todo.completed_local_date)}, ${time}` : time}
+    <ReviewTodoItem
+      todo={editable}
+      areaOptions={ctx.areaOptions}
+      completedAt={toLocalInput(new Date(todo.completed_at), ctx.timeZone)}
+      header={
+        <span className="flex items-baseline justify-between gap-3">
+          <span>{todo.title}</span>
+          <span className="shrink-0 text-xs text-gray-500">
+            {showDate
+              ? `${formatDay(todo.completed_local_date)}, ${time}`
+              : time}
+          </span>
         </span>
-      </div>
+      }
+    >
       {paths.length > 0 && (
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {paths.map((path) => (
@@ -124,7 +158,7 @@ function TodoLine({
           ))}
         </div>
       )}
-    </li>
+    </ReviewTodoItem>
   );
 }
 
@@ -302,17 +336,11 @@ async function Review({
     type: parseAreaType(first(params.type)),
     area: isUuid(areaParam) ? areaParam : undefined,
   };
-  const ctx: Ctx = {
-    state,
-    today,
-    timeZone,
-    href: (changes) => reviewHref(state, changes, today),
-  };
   const { period } = state;
 
   // Same lazy generation as /todos, so today's habits count as expected.
   await supabase.rpc("ensure_habit_todos");
-  const [rows, areas, occurrences] = await Promise.all([
+  const [rows, areas, occurrences, details] = await Promise.all([
     supabase.rpc("review_completed", { p_from: period.from, p_to: period.to }),
     supabase
       .from("areas")
@@ -324,9 +352,17 @@ async function Review({
           p_to: period.to,
         })
       : null,
+    // Notes and due dates for the edit form. The UTC window is a day wider
+    // on each side than the local period, which covers every timezone offset.
+    supabase
+      .from("todos")
+      .select("id, notes, due_on, habit_area_id")
+      .gte("completed_at", `${addDays(period.from, -1)}T00:00:00Z`)
+      .lt("completed_at", `${addDays(period.to, 2)}T00:00:00Z`),
   ]);
 
-  if (rows.error) {
+  // Without details, saving an edit would clear notes and due dates.
+  if (rows.error || details.error) {
     return (
       <p role="alert" className="text-red-600">
         Couldn&apos;t load your review. Try reloading.
@@ -334,6 +370,16 @@ async function Review({
     );
   }
 
+  const ctx: Ctx = {
+    state,
+    today,
+    timeZone,
+    href: (changes) => reviewHref(state, changes, today),
+    details: new Map((details.data ?? []).map((todo) => [todo.id, todo])),
+    areaOptions: (areas.data ?? [])
+      .filter((area) => area.archived_at === null)
+      .map(({ id, name, type, color }) => ({ id, name, type, color })),
+  };
   const todos = filterTodos(toReviewTodos(rows.data), state);
   const summary = summarize(todos);
   const label = periodLabel(period, today);
