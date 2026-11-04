@@ -64,6 +64,24 @@ function daysBetween(from: string, to: string) {
   return Math.round((toDate(to).getTime() - toDate(from).getTime()) / 86_400_000);
 }
 
+/** Every date from `from` to `to`, inclusive. */
+export function datesInRange(from: string, to: string) {
+  const dates: string[] = [];
+  for (let date = from; date <= to; date = addDays(date, 1)) {
+    dates.push(date);
+  }
+  return dates;
+}
+
+/** Distinct todos completed on each local date. */
+export function countByDay(todos: ReviewTodo[]) {
+  const days: Record<string, number> = {};
+  for (const todo of todos) {
+    days[todo.completed_local_date] = (days[todo.completed_local_date] ?? 0) + 1;
+  }
+  return days;
+}
+
 /** The user's current local date, e.g. "2026-11-03". */
 export function localDate(instant: Date, timeZone: string) {
   return instant.toLocaleDateString("en-CA", { timeZone });
@@ -292,6 +310,8 @@ export type AreaNode = {
   area: AreaInfo;
   /** Distinct todos in this area or any area below it. */
   count: number;
+  /** Like `count`, per local completion date. */
+  days: Record<string, number>;
   /** Todos attached directly to this area. */
   todos: ReviewTodo[];
   children: AreaNode[];
@@ -321,11 +341,13 @@ export function groupByArea(todos: ReviewTodo[]): {
     for (const area of todo.areas) {
       let node = nodes.get(area.id);
       if (!node) {
-        node = { area: info(area), count: 0, todos: [], children: [] };
+        node = { area: info(area), count: 0, days: {}, todos: [], children: [] };
         nodes.set(area.id, node);
       }
       // The RPC lists each area once per todo, so this counts distinct todos.
       node.count += 1;
+      const day = todo.completed_local_date;
+      node.days[day] = (node.days[day] ?? 0) + 1;
       if (area.depth === 0) {
         node.todos.push(todo);
       }

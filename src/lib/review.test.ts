@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   breadcrumbs,
+  countByDay,
+  datesInRange,
   filterTodos,
   groupByArea,
   groupByDay,
@@ -240,7 +242,32 @@ describe("groupByArea", () => {
     const fit = roots.find((n) => n.area.id === "fit")!;
     expect(fit.count).toBe(2);
     expect(fit.children[0].count).toBe(2);
+    expect(Object.values(fit.days).reduce((a, b) => a + b)).toBe(2);
     expect(roots.find((n) => n.area.id === "stretch")!.count).toBe(1);
+  });
+});
+
+describe("grid days", () => {
+  it("lists every date in a range, across month ends", () => {
+    expect(datesInRange("2026-10-30", "2026-11-02")).toEqual([
+      "2026-10-30",
+      "2026-10-31",
+      "2026-11-01",
+      "2026-11-02",
+    ]);
+    expect(datesInRange("2026-11-03", "2026-11-03")).toEqual(["2026-11-03"]);
+  });
+
+  it("rolls per-day counts up to ancestor areas", () => {
+    const { roots } = groupByArea([run, stretchToday, loose]);
+    const fit = roots.find((n) => n.area.id === "fit")!;
+    expect(fit.days).toEqual({ [run.completed_local_date]: 1 });
+    expect(fit.children[0].days).toEqual(fit.days);
+    expect(countByDay([run, loose])).toEqual(
+      run.completed_local_date === loose.completed_local_date
+        ? { [run.completed_local_date]: 2 }
+        : { [run.completed_local_date]: 1, [loose.completed_local_date]: 1 },
+    );
   });
 });
 
