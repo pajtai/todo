@@ -13,12 +13,7 @@ Email/password auth through Supabase Auth, using `@supabase/ssr` session cookies
 
 Hosted auth settings live in the Supabase dashboard (Authentication → URL Configuration and Sign In / Providers). `supabase/config.toml` mirrors the intended values but isn't applied to the hosted project unless you run `supabase config push`, which overwrites hosted settings with the whole file, so review its diff first.
 
-For local development:
-
-- **Site URL:** `http://localhost:3000`
-- **Redirect URLs:** `http://localhost:3000/auth/confirm`
-
-Supabase's default email sender only delivers to members of the project's organization and has a low hourly limit. Open sign-ups need custom SMTP before launch.
+The Site URL is the production URL. The redirect allow-list covers `http://localhost:3000/auth/confirm`, production, and every Vercel preview. See [deployment.md](deployment.md#auth-url-configuration) for the exact values and the email sender limits.
 
 ## Protecting pages and data
 

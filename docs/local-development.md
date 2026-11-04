@@ -2,7 +2,7 @@
 
 The Next.js app runs locally against a **hosted Supabase project** (`todo`, ref `ikskdeuslqfakakhlmra`, `us-east-1`). We don't run the Supabase Docker stack locally because it's too heavy for the dev machine. The Supabase CLI is an npm dev dependency, so use `npx supabase` or the npm scripts below.
 
-This single project currently holds all development data. Add a separate production project before real data matters.
+This single project is also **production** (see [deployment.md](deployment.md)), so local development uses real data. Use separate test accounts.
 
 ## First-time setup
 
