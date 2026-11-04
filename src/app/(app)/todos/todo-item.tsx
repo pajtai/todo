@@ -116,9 +116,18 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
   );
 }
 
-type EditFormProps = TodoItemProps & { onDone: () => void };
+type EditFormProps = TodoItemProps & {
+  onDone: () => void;
+  /** datetime-local value; when set, the form also edits when it was done. */
+  completedAt?: string;
+};
 
-function EditForm({ todo, areaOptions, onDone }: EditFormProps) {
+export function EditForm({
+  todo,
+  areaOptions,
+  onDone,
+  completedAt,
+}: EditFormProps) {
   // Areas already on the todo stay listed even if archived. Otherwise saving
   // would silently detach them.
   const activeIds = new Set(areaOptions.map((area) => area.id));
@@ -168,6 +177,18 @@ function EditForm({ todo, areaOptions, onDone }: EditFormProps) {
           className={inputClass}
         />
       </label>
+      {completedAt !== undefined && (
+        <label className="flex flex-col gap-1 text-sm">
+          Done at
+          <input
+            name="completed_at"
+            type="datetime-local"
+            required
+            defaultValue={completedAt}
+            className={inputClass}
+          />
+        </label>
+      )}
       {pickable.length > 0 && (
         <fieldset className="flex flex-col gap-2 text-sm">
           <legend className="mb-1">Areas</legend>

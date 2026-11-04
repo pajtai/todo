@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { isUuid } from "@/lib/areas";
+import type { TablesUpdate } from "@/lib/database.types";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fromLocalInput } from "@/lib/zoned-time";
 
 export type TodoActionState = { error?: string; title?: string };
 
@@ -59,11 +61,26 @@ async function setTodoAreas(
   return upsertError;
 }
 
+// A "Done at" value from a datetime-local input, read on the wall clock of
+// the user's profile timezone so it matches what the review shows.
+async function parseCompletedAt(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  value: string,
+) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", userId)
+    .single();
+  return fromLocalInput(value, profile?.timezone ?? "UTC");
+}
+
 export async function updateTodo(
   id: string,
   formData: FormData,
 ): Promise<TodoActionState> {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const title = String(formData.get("title") ?? "").trim();
   const invalid = validateTitle(title);
   if (invalid) {
@@ -71,14 +88,25 @@ export async function updateTodo(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("todos")
-    .update({
-      title,
-      notes: String(formData.get("notes") ?? "").trim() || null,
-      due_on: String(formData.get("due_on") ?? "") || null,
-    })
-    .eq("id", id);
+  const changes: TablesUpdate<"todos"> = {
+    title,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+    due_on: String(formData.get("due_on") ?? "") || null,
+  };
+  // Only the review's edit form sends this field; /todos leaves it alone.
+  const completedAt = formData.get("completed_at");
+  if (completedAt !== null) {
+    const instant = await parseCompletedAt(supabase, user.id, String(completedAt));
+    if (!instant) {
+      return { error: "Enter when it was done." };
+    }
+    if (instant.getTime() > Date.now()) {
+      return { error: "The done time can't be in the future." };
+    }
+    changes.completed_at = instant.toISOString();
+  }
+
+  const { error } = await supabase.from("todos").update(changes).eq("id", id);
   if (error) {
     return { error: "Couldn't save your changes. Try again." };
   }
