@@ -460,16 +460,16 @@ async function Review({
             Today
           </Pill>
           <Pill
-            href={ctx.href({ period: { kind: "week", ...todayRange } })}
-            active={period.kind === "week" && period.current}
+            href={ctx.href({ period: { kind: "7d", ...todayRange } })}
+            active={period.kind === "7d" && period.current}
           >
-            This week
+            Past 7 days
           </Pill>
           <Pill
-            href={ctx.href({ period: { kind: "month", ...todayRange } })}
-            active={period.kind === "month" && period.current}
+            href={ctx.href({ period: { kind: "30d", ...todayRange } })}
+            active={period.kind === "30d" && period.current}
           >
-            This month
+            Past 30 days
           </Pill>
         </nav>
         <div className="flex items-center gap-3">
@@ -481,13 +481,23 @@ async function Review({
             ←
           </Link>
           <h2 className="text-lg font-medium">{label}</h2>
-          <Link
-            href={ctx.href({ period: { kind: period.kind, ...period.next } })}
-            aria-label="Next period"
-            className="rounded border border-gray-300 px-2 py-0.5"
-          >
-            →
-          </Link>
+          {/* No next period once it reaches today: the future isn't shown. */}
+          {period.next ? (
+            <Link
+              href={ctx.href({ period: { kind: period.kind, ...period.next } })}
+              aria-label="Next period"
+              className="rounded border border-gray-300 px-2 py-0.5"
+            >
+              →
+            </Link>
+          ) : (
+            <span
+              aria-hidden
+              className="rounded border border-gray-200 px-2 py-0.5 text-gray-300"
+            >
+              →
+            </span>
+          )}
         </div>
         <form
           action="/review"
@@ -499,6 +509,7 @@ async function Review({
               type="date"
               name="from"
               required
+              max={today}
               defaultValue={period.from}
               className="rounded border border-gray-300 px-2 py-1 text-black"
             />
@@ -509,6 +520,7 @@ async function Review({
               type="date"
               name="to"
               required
+              max={today}
               defaultValue={period.to}
               className="rounded border border-gray-300 px-2 py-1 text-black"
             />

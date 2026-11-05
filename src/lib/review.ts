@@ -109,16 +109,23 @@ function formatShort(date: string, withYear: boolean) {
 // ---------------------------------------------------------------------------
 // Periods
 
-export const PERIOD_KINDS = ["day", "week", "month", "custom"] as const;
+export const PERIOD_KINDS = ["day", "7d", "30d", "custom"] as const;
 export type PeriodKind = (typeof PERIOD_KINDS)[number];
+type RollingKind = Exclude<PeriodKind, "custom">;
+
+const PERIOD_DAYS: Record<RollingKind, number> = { day: 1, "7d": 7, "30d": 30 };
+
+/** Older links used calendar weeks and months; they map to the rolling ones. */
+const LEGACY_KINDS: Record<string, RollingKind> = { week: "7d", month: "30d" };
 
 export type Range = { from: string; to: string };
 
 export type Period = Range & {
   kind: PeriodKind;
   prev: Range;
-  next: Range;
-  /** True when today falls inside the period. */
+  /** Null when the period already ends today: the future isn't shown. */
+  next: Range | null;
+  /** True when the period ends today. */
   current: boolean;
 };
 
@@ -129,79 +136,61 @@ export type PeriodParams = {
   to?: string;
 };
 
-function rangeFor(kind: Exclude<PeriodKind, "custom">, anchor: string): Range {
-  if (kind === "day") {
-    return { from: anchor, to: anchor };
-  }
-  if (kind === "week") {
-    // Weeks start on Monday.
-    const sinceMonday = (toDate(anchor).getUTCDay() + 6) % 7;
-    const from = addDays(anchor, -sinceMonday);
-    return { from, to: addDays(from, 6) };
-  }
-  const from = `${anchor.slice(0, 7)}-01`;
-  const nextMonth = toDate(from);
-  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
-  return { from, to: addDays(fromDate(nextMonth), -1) };
+/** The `days`-long range ending on `end`. */
+function endingOn(end: string, days: number): Range {
+  return { from: addDays(end, -(days - 1)), to: end };
+}
+
+function min(a: string, b: string) {
+  return a <= b ? a : b;
 }
 
 /**
- * Turns search params into a concrete period. `from` + `to` make a custom
- * range; otherwise `period` (default "week") is anchored on `date` (default
- * today). Invalid values fall back to the defaults instead of erroring.
+ * Turns search params into a concrete period that never extends past today.
+ * `from` + `to` make a custom range; otherwise `period` (default "7d") is the
+ * days ending on `date` (default today). Invalid values fall back to the
+ * defaults instead of erroring.
  */
 export function resolvePeriod(params: PeriodParams, today: string): Period {
   let kind: PeriodKind;
+  let length: number;
   let range: Range;
-  let prev: Range;
-  let next: Range;
 
   if (isDateString(params.from) && isDateString(params.to)) {
     kind = "custom";
-    const to = params.from <= params.to ? params.to : params.from;
+    const to = min(params.from <= params.to ? params.to : params.from, today);
+    const start = min(params.from <= params.to ? params.from : params.to, to);
     const earliest = addDays(to, -(MAX_CUSTOM_DAYS - 1));
-    const start = params.from <= params.to ? params.from : params.to;
-    const from = start < earliest ? earliest : start;
-    const length = daysBetween(from, to) + 1;
-    range = { from, to };
-    prev = { from: addDays(from, -length), to: addDays(from, -1) };
-    next = { from: addDays(to, 1), to: addDays(to, length) };
+    range = { from: start < earliest ? earliest : start, to };
+    length = daysBetween(range.from, range.to) + 1;
   } else {
-    kind = (["day", "week", "month"] as const).find((k) => k === params.period) ?? "week";
-    const anchor = isDateString(params.date) ? params.date : today;
-    range = rangeFor(kind, anchor);
-    prev = rangeFor(kind, addDays(range.from, -1));
-    next = rangeFor(kind, addDays(range.to, 1));
+    kind =
+      (["day", "7d", "30d"] as const).find((k) => k === params.period) ??
+      LEGACY_KINDS[params.period ?? ""] ??
+      "7d";
+    length = PERIOD_DAYS[kind];
+    const end = isDateString(params.date) ? min(params.date, today) : today;
+    range = endingOn(end, length);
   }
 
+  const current = range.to === today;
   return {
     kind,
     ...range,
-    prev,
-    next,
-    current: range.from <= today && today <= range.to,
+    prev: endingOn(addDays(range.from, -1), length),
+    next: current ? null : endingOn(min(addDays(range.to, length), today), length),
+    current,
   };
 }
 
 export function periodLabel(period: Period, today: string) {
   const sameYear = period.from.slice(0, 4) === today.slice(0, 4);
-  switch (period.kind) {
-    case "day":
-      if (period.from === today) return "Today";
-      if (period.from === addDays(today, -1)) return "Yesterday";
-      return formatDay(period.from, !sameYear);
-    case "week":
-      if (period.current) return "This week";
-      if (period.to === addDays(rangeFor("week", today).from, -1)) return "Last week";
-      break;
-    case "month":
-      if (period.current) return "This month";
-      return toDate(period.from).toLocaleDateString("en-US", {
-        timeZone: "UTC",
-        month: "long",
-        year: "numeric",
-      });
+  if (period.kind === "day") {
+    if (period.from === today) return "Today";
+    if (period.from === addDays(today, -1)) return "Yesterday";
   }
+  if (period.current && period.kind === "7d") return "Past 7 days";
+  if (period.current && period.kind === "30d") return "Past 30 days";
   return period.from === period.to
     ? formatDay(period.from, !sameYear)
     : `${formatShort(period.from, !sameYear)} – ${formatShort(period.to, !sameYear)}`;
@@ -229,7 +218,7 @@ export function parseAreaType(value: unknown): AreaType | undefined {
 }
 
 export type HrefChanges = {
-  /** For day/week/month only the start matters: it's the anchor date. */
+  /** For day/7d/30d only the end matters: it's the anchor date. */
   period?: Range & { kind: PeriodKind };
   group?: GroupBy;
   type?: AreaType | null;
@@ -238,7 +227,7 @@ export type HrefChanges = {
 
 /**
  * Builds a /review link from the current state with some parts replaced.
- * Defaults (the period containing today, week, group by area) are left out to
+ * Defaults (ending today, 7 days, group by area) are left out to
  * keep URLs short.
  */
 export function reviewHref(
@@ -253,9 +242,9 @@ export function reviewHref(
     params.set("from", period.from);
     params.set("to", period.to);
   } else {
-    if (period.kind !== "week") params.set("period", period.kind);
-    if (!(period.from <= today && today <= period.to)) {
-      params.set("date", period.from);
+    if (period.kind !== "7d") params.set("period", period.kind);
+    if (period.to !== today) {
+      params.set("date", period.to);
     }
   }
 

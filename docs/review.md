@@ -18,14 +18,19 @@ The conversion to local time happens in SQL (`completed_at at time zone tz`), so
 
 All dates are local calendar dates, as `YYYY-MM-DD`. "Today" is computed from `profiles.timezone`.
 
+Periods are rolling windows that end on a date, and never include future days.
+
 | URL | Period |
 | --- | --- |
-| `/review` | This week (weeks run Monday–Sunday) |
-| `?period=day` / `?period=month` | Today / this month |
-| `?date=2026-10-26` | The day, week, or month containing that date |
+| `/review` | Past 7 days: the 7 days ending today |
+| `?period=day` / `?period=30d` | Today / the 30 days ending today |
+| `?date=2026-10-26` | The day, 7 days, or 30 days **ending** on that date |
 | `?from=2026-10-01&to=2026-10-15` | Custom range, capped at 366 days. Reversed bounds are swapped |
 
-Prev and next arrows step by one period (for a custom range, by its length). Invalid values fall back to the defaults.
+- A `date`, or a custom `to`, after today is clamped to today, and a custom `from` after today becomes today.
+- Prev and next arrows step by one period (for a custom range, by its length). The next arrow is greyed out once the period ends today. A step that would run past today lands on the period ending today instead.
+- Older `?period=week` and `?period=month` links map to 7 and 30 days.
+- Invalid values fall back to the defaults.
 
 ## Grouping and roll-up
 

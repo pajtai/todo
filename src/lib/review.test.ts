@@ -80,53 +80,73 @@ describe("dates", () => {
 });
 
 describe("resolvePeriod", () => {
-  const today = "2026-11-03"; // a Tuesday
+  const today = "2026-11-03";
 
-  it("defaults to the current Monday–Sunday week", () => {
-    const period = resolvePeriod({}, today);
-    expect(period).toMatchObject({
-      kind: "week",
-      from: "2026-11-02",
-      to: "2026-11-08",
+  it("defaults to the past 7 days, ending today", () => {
+    expect(resolvePeriod({}, today)).toEqual({
+      kind: "7d",
+      from: "2026-10-28",
+      to: today,
       current: true,
-      prev: { from: "2026-10-26", to: "2026-11-01" },
-      next: { from: "2026-11-09", to: "2026-11-15" },
+      prev: { from: "2026-10-21", to: "2026-10-27" },
+      next: null,
     });
   });
 
-  it("handles a Sunday anchor as the end of its week", () => {
-    expect(resolvePeriod({ date: "2026-11-08" }, today)).toMatchObject({
-      from: "2026-11-02",
-      to: "2026-11-08",
-    });
-  });
-
-  it("resolves days and months", () => {
+  it("resolves days and the past 30 days", () => {
     expect(resolvePeriod({ period: "day" }, today)).toMatchObject({
       from: today,
       to: today,
-      prev: { from: "2026-11-02" },
+      prev: { from: "2026-11-02", to: "2026-11-02" },
+      next: null,
+    });
+    expect(resolvePeriod({ period: "30d" }, today)).toMatchObject({
+      from: "2026-10-05",
+      to: today,
+      prev: { from: "2026-09-05", to: "2026-10-04" },
+    });
+  });
+
+  it("ends earlier periods on `date` and never steps past today", () => {
+    expect(resolvePeriod({ date: "2026-10-27" }, today)).toMatchObject({
+      from: "2026-10-21",
+      to: "2026-10-27",
+      current: false,
+      next: { from: "2026-10-28", to: today },
+    });
+    // Two days back: the next 7 days would run into the future.
+    expect(resolvePeriod({ date: "2026-11-01" }, today)).toMatchObject({
+      next: { from: "2026-10-28", to: today },
+    });
+  });
+
+  it("clamps future dates to today", () => {
+    expect(resolvePeriod({ date: "2026-12-25" }, today)).toMatchObject({
+      to: today,
+      current: true,
     });
     expect(
-      resolvePeriod({ period: "month", date: "2026-03-15" }, today),
-    ).toMatchObject({
-      from: "2026-03-01",
-      to: "2026-03-31",
-      current: false,
-      prev: { from: "2026-02-01", to: "2026-02-28" },
-      next: { from: "2026-04-01", to: "2026-04-30" },
-    });
+      resolvePeriod({ from: "2026-11-01", to: "2026-11-20" }, today),
+    ).toMatchObject({ from: "2026-11-01", to: today, next: null });
+    expect(
+      resolvePeriod({ from: "2026-11-10", to: "2026-11-20" }, today),
+    ).toMatchObject({ from: today, to: today });
+  });
+
+  it("maps old week and month links to the rolling periods", () => {
+    expect(resolvePeriod({ period: "week" }, today).kind).toBe("7d");
+    expect(resolvePeriod({ period: "month" }, today).kind).toBe("30d");
   });
 
   it("treats from + to as a custom range and steps by its length", () => {
     expect(
-      resolvePeriod({ from: "2026-11-10", to: "2026-11-01" }, today),
+      resolvePeriod({ from: "2026-10-20", to: "2026-10-11" }, today),
     ).toMatchObject({
       kind: "custom",
-      from: "2026-11-01",
-      to: "2026-11-10",
-      prev: { from: "2026-10-22", to: "2026-10-31" },
-      next: { from: "2026-11-11", to: "2026-11-20" },
+      from: "2026-10-11",
+      to: "2026-10-20",
+      prev: { from: "2026-10-01", to: "2026-10-10" },
+      next: { from: "2026-10-21", to: "2026-10-30" },
     });
   });
 
@@ -138,7 +158,7 @@ describe("resolvePeriod", () => {
   it("falls back to defaults for bad input", () => {
     expect(
       resolvePeriod({ period: "year", date: "nope", from: "x" }, today),
-    ).toMatchObject({ kind: "week", from: "2026-11-02" });
+    ).toMatchObject({ kind: "7d", from: "2026-10-28", to: today });
   });
 
   it("labels periods relative to today", () => {
@@ -146,11 +166,12 @@ describe("resolvePeriod", () => {
       periodLabel(resolvePeriod(params, today), today);
     expect(label({ period: "day" })).toBe("Today");
     expect(label({ period: "day", date: "2026-11-02" })).toBe("Yesterday");
-    expect(label({})).toBe("This week");
-    expect(label({ date: "2026-10-28" })).toBe("Last week");
-    expect(label({ date: "2026-10-14" })).toBe("Oct 12 – Oct 18");
-    expect(label({ period: "month" })).toBe("This month");
-    expect(label({ period: "month", date: "2025-12-01" })).toBe("December 2025");
+    expect(label({})).toBe("Past 7 days");
+    expect(label({ period: "30d" })).toBe("Past 30 days");
+    expect(label({ date: "2026-10-27" })).toBe("Oct 21 – Oct 27");
+    expect(label({ period: "30d", date: "2025-12-31" })).toBe(
+      "Dec 2, 2025 – Dec 31, 2025",
+    );
   });
 });
 
@@ -164,8 +185,11 @@ describe("reviewHref", () => {
 
   it("anchors periods that don't contain today", () => {
     expect(
-      reviewHref(state, { period: { kind: "week", ...state.period.prev } }, today),
-    ).toBe("/review?date=2026-10-26");
+      reviewHref(state, { period: { kind: "7d", ...state.period.prev } }, today),
+    ).toBe("/review?date=2026-10-27");
+    expect(
+      reviewHref(state, { period: { kind: "30d", from: today, to: today } }, today),
+    ).toBe("/review?period=30d");
     expect(
       reviewHref(
         state,
