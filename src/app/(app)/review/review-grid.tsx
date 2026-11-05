@@ -26,6 +26,15 @@ export type GridTodo = {
   completedAt: string;
 };
 
+/**
+ * One line in the grid: a single todo, or every completed todo of a
+ * repeating task (one series), newest first.
+ */
+export type GridRow = {
+  key: string;
+  items: GridTodo[];
+};
+
 export type GridGroup = {
   key: string;
   /** Unset for the "Unassigned" group. */
@@ -35,7 +44,7 @@ export type GridGroup = {
   count: number;
   /** Distinct todos per date in this group or any group below it. */
   days: Record<string, number>;
-  todos: GridTodo[];
+  rows: GridRow[];
   children: GridGroup[];
 };
 
@@ -128,23 +137,30 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
           })}
         </tr>
         {open &&
-          group.todos.map((item) => {
-            const key = `${group.key}:${item.todo.id}`;
-            return editing === key ? (
-              <tr key={key}>
-                <td colSpan={columns} className="sticky left-0 py-2">
-                  <div className="max-w-xl" style={indent}>
-                    <EditForm
-                      todo={item.todo}
-                      areaOptions={areaOptions}
-                      completedAt={item.completedAt}
-                      onDone={() => setEditing(undefined)}
-                    />
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              <tr key={key} className="border-t border-gray-100">
+          group.rows.map((row) => {
+            const editingItem = row.items.find(
+              (item) => editing === `${group.key}:${item.todo.id}`,
+            );
+            if (editingItem) {
+              return (
+                <tr key={row.key}>
+                  <td colSpan={columns} className="sticky left-0 py-2">
+                    <div className="max-w-xl" style={indent}>
+                      <EditForm
+                        todo={editingItem.todo}
+                        areaOptions={areaOptions}
+                        completedAt={editingItem.completedAt}
+                        onDone={() => setEditing(undefined)}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            }
+            const [latest] = row.items;
+            const byDate = Map.groupBy(row.items, (item) => item.date);
+            return (
+              <tr key={row.key} className="border-t border-gray-100">
                 <th
                   scope="row"
                   className="sticky left-0 bg-white py-1 pr-3 text-left font-normal"
@@ -152,37 +168,46 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
                   <div style={{ paddingLeft: `${depth + 1.5}rem` }}>
                     <button
                       type="button"
-                      onClick={() => setEditing(key)}
-                      title={`Done ${item.doneLabel}. Click to edit.`}
+                      onClick={() => setEditing(`${group.key}:${latest.todo.id}`)}
+                      title={`Last done ${latest.doneLabel}. Click to edit.`}
                       className="text-left hover:underline"
                     >
-                      {item.todo.title}
+                      {latest.todo.title}
                     </button>
                   </div>
                 </th>
-                {days.map((day) => (
-                  <td key={day.date} className="p-0.5">
-                    <div
-                      title={
-                        day.date === item.date
-                          ? `Done ${item.doneLabel}`
-                          : undefined
-                      }
-                      className={`mx-auto size-6 rounded-sm ${
-                        day.date === item.date ? "" : "border border-gray-100"
-                      }`}
-                      style={
-                        day.date === item.date
-                          ? { backgroundColor: todoColor(color) }
-                          : undefined
-                      }
-                    >
-                      {day.date === item.date && (
-                        <span className="sr-only">Done {item.doneLabel}</span>
-                      )}
-                    </div>
-                  </td>
-                ))}
+                {days.map((day) => {
+                  const done = byDate.get(day.date);
+                  if (!done) {
+                    return (
+                      <td key={day.date} className="p-0.5">
+                        <div className="mx-auto size-6 rounded-sm border border-gray-100" />
+                      </td>
+                    );
+                  }
+                  const label = done
+                    .map((item) => `${item.todo.title}, done ${item.doneLabel}`)
+                    .join("\n");
+                  return (
+                    <td key={day.date} className="p-0.5">
+                      {/* Each box edits the todo done that day. */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditing(`${group.key}:${done[0].todo.id}`)
+                        }
+                        title={`${label}\nClick to edit.`}
+                        className="mx-auto flex size-6 items-center justify-center rounded-sm text-[10px] text-white"
+                        style={{ backgroundColor: todoColor(color) }}
+                      >
+                        {done.length > 1 && done.length}
+                        <span className="sr-only">
+                          Edit {label}
+                        </span>
+                      </button>
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}

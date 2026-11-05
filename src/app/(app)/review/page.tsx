@@ -43,6 +43,7 @@ import {
   ReviewGrid,
   type GridDay,
   type GridGroup,
+  type GridRow,
   type GridTodo,
 } from "./review-grid";
 import { ReviewTodoItem } from "./review-todo-item";
@@ -222,6 +223,19 @@ function gridTodo(todo: ReviewTodo, ctx: Ctx): GridTodo {
   };
 }
 
+// A repeating task's todos share one row; other todos get their own. The RPC
+// returns newest first, so each row's items are too.
+function gridRows(todos: ReviewTodo[], ctx: Ctx): GridRow[] {
+  const rows = Map.groupBy(
+    todos,
+    (todo) => ctx.details.get(todo.todo_id)?.series?.id ?? todo.todo_id,
+  );
+  return [...rows].map(([key, list]) => ({
+    key,
+    items: list.map((todo) => gridTodo(todo, ctx)),
+  }));
+}
+
 function gridGroup(node: AreaNode, ctx: Ctx): GridGroup {
   return {
     key: node.area.id,
@@ -230,7 +244,7 @@ function gridGroup(node: AreaNode, ctx: Ctx): GridGroup {
     active: node.area.id === ctx.state.area,
     count: node.count,
     days: node.days,
-    todos: node.todos.map((todo) => gridTodo(todo, ctx)),
+    rows: gridRows(node.todos, ctx),
     children: node.children.map((child) => gridGroup(child, ctx)),
   };
 }
@@ -244,7 +258,7 @@ function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
       key: "unassigned",
       count: unassigned.length,
       days: countByDay(unassigned),
-      todos: unassigned.map((todo) => gridTodo(todo, ctx)),
+      rows: gridRows(unassigned, ctx),
       children: [],
     });
   }
