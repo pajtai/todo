@@ -250,7 +250,8 @@ function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
     });
   }
   const { from, to } = ctx.state.period;
-  const days: GridDay[] = datesInRange(from, to).map((date) => {
+  // Newest day on the left, going back in time to the right.
+  const days: GridDay[] = datesInRange(from, to).reverse().map((date) => {
     const utc = new Date(`${date}T00:00:00Z`);
     return {
       date,
