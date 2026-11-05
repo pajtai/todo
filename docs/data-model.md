@@ -23,7 +23,8 @@ One row per user, created by the `on_auth_user_created` trigger on `auth.users`.
 | `notes` | Optional |
 | `due_on` | Optional date, with no time or timezone |
 | `completed_at` | Null means open. A timestamp, not a boolean, because the Review view needs to know when a todo was done |
-| `habit_area_id`, `occurrence_date` | Set on todos generated from a habit. Unique per user, habit, and date. See [habits.md](habits.md) |
+| `series_id`, `occurrence_date` | Set on repeating todos: the `todo_series` row with the rule, and the day this todo is for. Unique per user, series, and date. See [habits.md](habits.md) |
+| `habit_area_id` | **Deprecated**, no longer written. Kept until the old deployed code is gone |
 | `created_at`, `updated_at` | `updated_at` is maintained by the `set_updated_at()` trigger |
 
 Unchecking a todo clears `completed_at`, and checking it again records the new time.
@@ -78,9 +79,15 @@ Area pages and the `?area=` filter on `/todos` show only todos attached directly
 
 `todos` relates to `areas` two ways: through `todo_areas` and through `habit_area_id`. So a PostgREST embed has to name the join table: `areas!todo_areas(...)`. A bare `areas(...)` fails as ambiguous.
 
-## Habit functions
+## `todo_series`
 
-`user_today()`, `ensure_habit_todos()`, `habit_occurrences()`, and `habit_streaks()`. See [habits.md](habits.md).
+A repeat rule for a task: `recurrence`, `recurrence_days`, `starts_on`, and `ended_on` (set when the user stops repeating). Owner-only RLS, like `todos`. See [habits.md](habits.md).
+
+## Recurrence functions
+
+`user_today()`, `ensure_habit_todos()`, `set_todo_recurrence()`, `series_occurrences()`, and `series_next_occurrence()`. See [habits.md](habits.md).
+
+The old `habit_occurrences()` and `habit_streaks()` functions, and the `areas` columns `recurrence`, `recurrence_days`, `habit_title`, and `starts_on`, are **deprecated**. Their data was moved to `todo_series` and cleared. They're kept so the previously deployed app doesn't error, and a later migration should drop them once the new code is deployed.
 
 ## `review_completed` function
 
