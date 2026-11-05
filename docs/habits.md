@@ -37,6 +37,6 @@ A habit todo completed late, say on Tuesday for Monday's occurrence, counts towa
 
 ## UI
 
-- `/todos`: habit todos show ↻.
+- `/todos`: habit todos show ↻. Clicking one opens the edit form with a **Repeats** section (the same fields as the area form, from `recurrence-fields.tsx`). Saving it updates the habit area's rule, so it applies to the habit's future todos, as described under "Editing a rule". Leaving the start date empty sets it to today. The rule is validated (`parseRecurrence` in `src/lib/habits.ts`) before anything is saved.
 - `/areas/[id]` for a recurring habit: the rule, current streak, 30-day rate, and a 30-day grid (done / missed / due today / not scheduled).
 - `/review?group=type`: "Habit completion" lists each habit's rate for the period.
