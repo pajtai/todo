@@ -5,6 +5,7 @@ import { isUuid } from "@/lib/areas";
 import type { TablesUpdate } from "@/lib/database.types";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { parseRecurrence, type ParsedRecurrence } from "@/lib/habits";
 import { fromLocalInput } from "@/lib/zoned-time";
 
 export type TodoActionState = { error?: string; title?: string };
@@ -87,6 +88,17 @@ export async function updateTodo(
     return { error: invalid };
   }
 
+  // Validated up front so a bad rule doesn't leave a half-saved edit.
+  const habitId = formData.get("habit_id");
+  let habit: { id: string; rule: Exclude<ParsedRecurrence, { error: string }> } | undefined;
+  if (isUuid(habitId)) {
+    const rule = parseRecurrence(formData);
+    if (rule.error !== undefined) {
+      return { error: rule.error };
+    }
+    habit = { id: habitId, rule };
+  }
+
   const supabase = await createClient();
   const changes: TablesUpdate<"todos"> = {
     title,
@@ -109,6 +121,23 @@ export async function updateTodo(
   const { error } = await supabase.from("todos").update(changes).eq("id", id);
   if (error) {
     return { error: "Couldn't save your changes. Try again." };
+  }
+
+  // Habit todos also edit the habit's rule. RLS limits this to own areas.
+  if (habit) {
+    const values = { ...habit.rule.values };
+    if (habit.rule.startsOnToday) {
+      const { data: today } = await supabase.rpc("user_today");
+      values.starts_on = today;
+    }
+    const { error: habitError } = await supabase
+      .from("areas")
+      .update(values)
+      .eq("id", habit.id)
+      .eq("type", "habit");
+    if (habitError) {
+      return { error: "Saved the todo, but couldn't update how it repeats." };
+    }
   }
 
   const areaIds = formData.getAll("area_ids").filter(isUuid);

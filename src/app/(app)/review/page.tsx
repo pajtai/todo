@@ -98,11 +98,10 @@ type Ctx = {
   areaOptions: AreaOption[];
 };
 
-type TodoDetails = {
-  notes: string | null;
-  due_on: string | null;
-  habit_area_id: string | null;
-};
+type TodoDetails = Pick<
+  Todo,
+  "notes" | "due_on" | "created_at" | "habit_area_id" | "habit"
+>;
 
 // What the edit form needs: the row plus details `review_completed` lacks.
 function editable(todo: ReviewTodo, ctx: Ctx): Todo {
@@ -114,6 +113,8 @@ function editable(todo: ReviewTodo, ctx: Ctx): Todo {
     notes: details?.notes ?? null,
     due_on: details?.due_on ?? null,
     habit_area_id: details?.habit_area_id ?? null,
+    created_at: details?.created_at,
+    habit: details?.habit ?? null,
     areas: todo.areas
       .filter((area) => area.depth === 0)
       .map(({ id, name, type, color }) => ({ id, name, type, color })),
@@ -389,7 +390,9 @@ async function Review({
     // on each side than the local period, which covers every timezone offset.
     supabase
       .from("todos")
-      .select("id, notes, due_on, habit_area_id")
+      .select(
+        "id, notes, due_on, created_at, habit_area_id, habit:areas!todos_habit_area_id_fkey(id, name, recurrence, recurrence_days, starts_on)",
+      )
       .gte("completed_at", `${addDays(period.from, -1)}T00:00:00Z`)
       .lt("completed_at", `${addDays(period.to, 2)}T00:00:00Z`),
   ]);

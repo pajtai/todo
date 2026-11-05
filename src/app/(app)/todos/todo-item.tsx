@@ -3,7 +3,9 @@
 import { useActionState, useOptimistic, useState, useTransition } from "react";
 import { AREA_TYPE_LABELS, AREA_TYPES, type AreaOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
+import type { HabitRule } from "@/lib/habits";
 import { AreaChip } from "../area-chip";
+import { RecurrenceFields } from "../recurrence-fields";
 import {
   deleteTodo,
   setTodoCompleted,
@@ -11,10 +13,18 @@ import {
   type TodoActionState,
 } from "./actions";
 
+/** The habit area a generated todo belongs to, with its rule. */
+export type TodoHabit = Pick<Tables<"areas">, "id" | "name"> & HabitRule;
+
 export type Todo = Pick<
   Tables<"todos">,
   "id" | "title" | "notes" | "due_on" | "completed_at"
-> & { areas: AreaOption[]; habit_area_id?: string | null };
+> & {
+  areas: AreaOption[];
+  habit_area_id?: string | null;
+  created_at?: string;
+  habit?: TodoHabit | null;
+};
 
 type TodoItemProps = {
   todo: Todo;
@@ -150,6 +160,21 @@ export function EditForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-2">
+      {todo.created_at && (
+        <p className="text-sm text-gray-500">
+          Created{" "}
+          <time dateTime={todo.created_at}>
+            {new Date(todo.created_at).toLocaleString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+            })}
+          </time>
+        </p>
+      )}
       <label className="flex flex-col gap-1 text-sm">
         Title
         <input
@@ -215,6 +240,17 @@ export function EditForm({
               )
             );
           })}
+        </fieldset>
+      )}
+      {todo.habit && (
+        <fieldset className="flex flex-col gap-3 rounded border border-gray-200 p-3 text-sm">
+          <legend className="px-1">Repeats</legend>
+          <p className="text-gray-500">
+            Changes the &ldquo;{todo.habit.name}&rdquo; habit, so future todos
+            follow it too.
+          </p>
+          <input type="hidden" name="habit_id" value={todo.habit.id} />
+          <RecurrenceFields rule={todo.habit} />
         </fieldset>
       )}
       {state.error && (
