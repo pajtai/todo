@@ -26,7 +26,7 @@ async function AreaDetail({
   const { data: area } = await supabase
     .from("areas")
     .select(
-      "id, name, type, description, archived_at, parent_id, recurrence, recurrence_days, starts_on",
+      "id, name, type, description, archived_at, parent_id",
     )
     .eq("id", id)
     .maybeSingle();
@@ -104,8 +104,8 @@ async function AreaDetail({
           ))}
         </div>
       )}
-      {area.type === "habit" && area.recurrence && (
-        <HabitStats supabase={supabase} areaId={area.id} rule={area} />
+      {area.type === "habit" && (
+        <HabitStats supabase={supabase} areaId={area.id} />
       )}
       <section className="flex flex-col gap-1">
         <h2 className="font-medium">Open ({open.data.length})</h2>

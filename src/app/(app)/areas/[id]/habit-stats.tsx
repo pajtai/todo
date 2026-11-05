@@ -1,9 +1,11 @@
+import type { Tables } from "@/lib/database.types";
 import {
   describeRecurrence,
   formatRate,
   habitGrid,
   habitRate,
-  type HabitRule,
+  habitStreak,
+  type Occurrence,
 } from "@/lib/habits";
 import { addDays, formatDay } from "@/lib/review";
 import type { createClient } from "@/lib/supabase/server";
@@ -24,35 +26,91 @@ const CELL_LABELS = {
   off: "not scheduled",
 } as const;
 
+type SeriesRow = Pick<
+  Tables<"todo_series">,
+  "id" | "recurrence" | "recurrence_days" | "starts_on" | "ended_on"
+> & {
+  todos: Pick<Tables<"todos">, "title" | "occurrence_date" | "created_at">[];
+};
+
+// The most recent todo of a series names it.
+function latestTitle(series: SeriesRow) {
+  const [latest] = series.todos.toSorted(
+    (a, b) =>
+      (b.occurrence_date ?? "").localeCompare(a.occurrence_date ?? "") ||
+      b.created_at.localeCompare(a.created_at),
+  );
+  return latest?.title ?? "Untitled";
+}
+
+// Stats for a habit: every repeating task attached to it, combined.
 export async function HabitStats({
   supabase,
   areaId,
-  rule,
 }: {
   supabase: Awaited<ReturnType<typeof createClient>>;
   areaId: string;
-  rule: HabitRule;
 }) {
   const { data: today } = await supabase.rpc("user_today");
   if (!today) {
     return null;
   }
   const from = addDays(today, -(GRID_DAYS - 1));
-  const [streaks, occurrences] = await Promise.all([
-    supabase.rpc("habit_streaks"),
-    supabase.rpc("habit_occurrences", { p_from: from, p_to: today }),
-  ]);
-  const streak = streaks.data?.find((row) => row.area_id === areaId);
-  const mine = (occurrences.data ?? []).filter((o) => o.area_id === areaId);
-  const grid = habitGrid(mine, from, today, today);
-  const current = streak?.current_streak ?? 0;
+  // All history, for the streak. Series only generate days from their start.
+  const { data: occurrences } = await supabase.rpc("series_occurrences", {
+    p_from: "2000-01-01",
+    p_to: today,
+  });
+  const all = ((occurrences ?? []) as Occurrence[]).filter(
+    (o) => o.area_id === areaId,
+  );
+  const seriesIds = [
+    ...new Set(
+      (occurrences ?? [])
+        .filter((o) => o.area_id === areaId)
+        .map((o) => o.series_id),
+    ),
+  ];
+  const { data: series } = seriesIds.length
+    ? await supabase
+        .from("todo_series")
+        .select(
+          "id, recurrence, recurrence_days, starts_on, ended_on, todos(title, occurrence_date, created_at)",
+        )
+        .in("id", seriesIds)
+    : { data: [] as SeriesRow[] };
+
+  if (all.length === 0) {
+    return (
+      <section className="flex flex-col gap-1">
+        <h2 className="font-medium">Habit</h2>
+        <p className="text-sm text-gray-500">
+          No repeating tasks yet. Attach a task to this habit and set how it
+          repeats when you edit it.
+        </p>
+      </section>
+    );
+  }
+
+  const recent = all.filter((o) => o.day >= from);
+  const grid = habitGrid(recent, from, today, today);
+  const current = habitStreak(all, today);
 
   return (
     <section className="flex flex-col gap-2">
       <h2 className="font-medium">Habit</h2>
-      <p className="text-sm text-gray-500">
-        {describeRecurrence(rule)}, since {formatDay(rule.starts_on!, true)}
-      </p>
+      <ul className="flex flex-col gap-0.5 text-sm">
+        {(series ?? []).map((row) => (
+          <li key={row.id}>
+            {latestTitle(row)}{" "}
+            <span className="text-gray-500">
+              · {describeRecurrence(row)}, since{" "}
+              {formatDay(row.starts_on, true)}
+              {row.ended_on && `, stopped ${formatDay(row.ended_on, true)}`}
+            </span>
+          </li>
+        ))}
+      </ul>
       <div className="flex flex-wrap gap-6 text-sm">
         <p>
           <span className="text-2xl font-semibold">{current}</span>{" "}
@@ -60,7 +118,7 @@ export async function HabitStats({
         </p>
         <p>
           <span className="text-2xl font-semibold">
-            {formatRate(habitRate(mine, today))}
+            {formatRate(habitRate(recent, today))}
           </span>{" "}
           last {GRID_DAYS} days
         </p>

@@ -7,7 +7,6 @@ import {
   type AreaOption,
   type AreaType,
 } from "@/lib/areas";
-import { RecurrenceFields } from "../recurrence-fields";
 import type { AreaActionResult } from "./actions";
 
 const DEFAULT_COLOR = "#6b7280";
@@ -18,10 +17,6 @@ export type AreaFormValues = {
   parent_id: string | null;
   color: string | null;
   description: string | null;
-  recurrence: string | null;
-  recurrence_days: number[] | null;
-  habit_title: string | null;
-  starts_on: string | null;
 };
 
 type AreaFormProps = {
@@ -42,9 +37,6 @@ export function AreaForm({
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
   const [type, setType] = useState<AreaType>(area?.type ?? "project");
-  const [recurrence, setRecurrence] = useState(area?.recurrence ?? "");
-  // Remounts the recurrence fields after a save so they reset too.
-  const [resetCount, setResetCount] = useState(0);
   const inputClass = "rounded border border-gray-300 px-3 py-2 text-black";
 
   // Submits by hand because a form `action` resets the fields, which would lose
@@ -59,8 +51,6 @@ export function AreaForm({
       if (!result.error) {
         form.reset();
         setType(area?.type ?? "project");
-        setRecurrence(area?.recurrence ?? "");
-        setResetCount((count) => count + 1);
         onDone?.();
       }
     });
@@ -130,31 +120,10 @@ export function AreaForm({
         />
       </label>
       {type === "habit" && (
-        <fieldset className="flex flex-col gap-3 rounded border border-gray-200 p-3 text-sm">
-          <legend className="px-1">Repeats</legend>
-          <RecurrenceFields
-            key={resetCount}
-            // The current choice, so remounting (type switched away and
-            // back) keeps it in sync with the title field below.
-            rule={{
-              recurrence,
-              recurrence_days: area?.recurrence_days ?? null,
-              starts_on: area?.starts_on ?? null,
-            }}
-            onRecurrenceChange={setRecurrence}
-          />
-          {recurrence && (
-            <label className="flex flex-col gap-1">
-              Todo title
-              <input
-                name="habit_title"
-                defaultValue={area?.habit_title ?? ""}
-                placeholder="Defaults to the name"
-                className={inputClass}
-              />
-            </label>
-          )}
-        </fieldset>
+        <p className="text-sm text-gray-500">
+          To track a habit, attach tasks to it and set how they repeat when
+          you edit a task.
+        </p>
       )}
       {error && (
         <p role="alert" className="text-sm text-red-600">
