@@ -45,6 +45,14 @@ type ReviewGridProps = {
   areaOptions: AreaOption[];
 };
 
+// Area rows use the area's color (gray when it has none); its todos use a
+// darker shade of the same color so the two read as one group.
+const DEFAULT_AREA_COLOR = "#9ca3af"; // Tailwind gray-400
+
+function todoColor(areaColor: string) {
+  return `color-mix(in oklab, ${areaColor} 70%, black)`;
+}
+
 function allKeys(groups: GridGroup[]): string[] {
   return groups.flatMap((group) => [group.key, ...allKeys(group.children)]);
 }
@@ -68,6 +76,7 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
     const open = !collapsed.has(group.key);
     const indent = { paddingLeft: `${depth * 1}rem` };
     const name = group.area?.name ?? "Unassigned";
+    const color = group.area?.color ?? DEFAULT_AREA_COLOR;
 
     return (
       <Fragment key={group.key}>
@@ -106,14 +115,10 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
                   title={n > 0 ? `${name}: ${n} done on ${day.label}` : undefined}
                   className={`mx-auto flex size-6 items-center justify-center rounded-sm text-[10px] ${
                     n > 0
-                      ? "bg-gray-400 text-white"
+                      ? "text-white"
                       : "border border-gray-100"
                   }`}
-                  style={
-                    n > 0 && group.area?.color
-                      ? { backgroundColor: group.area.color }
-                      : undefined
-                  }
+                  style={n > 0 ? { backgroundColor: color } : undefined}
                 >
                   {n > 1 && n}
                   {n > 0 && <span className="sr-only"> done on {day.label}</span>}
@@ -164,10 +169,13 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
                           : undefined
                       }
                       className={`mx-auto size-6 rounded-sm ${
-                        day.date === item.date
-                          ? "bg-gray-800"
-                          : "border border-gray-100"
+                        day.date === item.date ? "" : "border border-gray-100"
                       }`}
+                      style={
+                        day.date === item.date
+                          ? { backgroundColor: todoColor(color) }
+                          : undefined
+                      }
                     >
                       {day.date === item.date && (
                         <span className="sr-only">Done {item.doneLabel}</span>
