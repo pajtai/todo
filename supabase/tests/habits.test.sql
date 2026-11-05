@@ -84,6 +84,21 @@ begin
     raise exception 'past occurrences were backfilled';
   end if;
 
+  -- An open todo blocks the next occurrence; completing it unblocks it.
+  if exists (select 1 from public.todos where habit_area_id = '00000000-0000-4000-8000-0000000000a1' and occurrence_date = '2026-11-03') then
+    raise exception 'daily habit got a second todo while one was open';
+  end if;
+  if public.ensure_habit_todos('2026-11-05') <> 0 then
+    raise exception 'habits with open todos generated more';
+  end if;
+  update public.todos set completed_at = now()
+  where habit_area_id = '00000000-0000-4000-8000-0000000000a1' and occurrence_date = '2026-11-04';
+  if public.ensure_habit_todos('2026-11-05') <> 1 then
+    raise exception 'completing the open todo did not unblock the next one';
+  end if;
+  update public.todos set completed_at = now()
+  where habit_area_id = '00000000-0000-4000-8000-0000000000a1' and occurrence_date = '2026-11-05';
+
   -- "Today" comes from the profile's timezone.
   if public.user_today() <> (now() at time zone 'Pacific/Kiritimati')::date then
     raise exception 'user_today ignores the profile timezone';
@@ -98,8 +113,6 @@ begin
   end if;
 
   -- Changing a rule keeps existing occurrences.
-  update public.todos set completed_at = now()
-  where habit_area_id = '00000000-0000-4000-8000-0000000000a1' and occurrence_date = '2026-11-04';
   update public.areas set recurrence = 'weekdays', recurrence_days = '{0}'
   where id = '00000000-0000-4000-8000-0000000000a1';
   if not exists (
@@ -132,9 +145,9 @@ begin
     raise exception 'unexpected streak before today: %', s;
   end if;
 
-  perform public.ensure_habit_todos();
-  update public.todos set completed_at = now()
-  where habit_area_id = '00000000-0000-4000-8000-0000000000a5' and occurrence_date = public.user_today();
+  -- The open day -3 todo would block generation, so record today directly.
+  insert into public.todos (title, habit_area_id, occurrence_date, completed_at)
+  values ('s', '00000000-0000-4000-8000-0000000000a5', public.user_today(), now());
 
   select * into s from public.habit_streaks() where area_id = '00000000-0000-4000-8000-0000000000a5';
   if s.current_streak <> 3 or s.completed_30 <> 4 or s.expected_30 <> 6 then
@@ -187,6 +200,9 @@ $$;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
 do $$
 begin
+  -- A's own open MWF todo would block it; B's open row must not.
+  update public.todos set completed_at = now()
+  where habit_area_id = '00000000-0000-4000-8000-0000000000a2' and completed_at is null;
   perform public.ensure_habit_todos('2026-11-06'); -- Friday
   if not exists (
     select 1 from public.todos

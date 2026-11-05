@@ -19,10 +19,11 @@ Set these on the area form under **Repeats**. They're stored on `areas` and allo
 There's no cron. `/todos` and `/review` call `ensure_habit_todos()` before they render. It inserts today's todo, using the user's local date from `profiles.timezone` (`user_today()`), for each active habit whose rule matches today, and links it to the habit in `todo_areas`.
 
 - **Idempotent.** The unique index on `todos (user_id, habit_area_id, occurrence_date)` makes repeated calls, including concurrent ones, create nothing new.
+- **One open todo per habit.** A habit with an incomplete todo, from any day, gets no new one. Completing or deleting it lets the next page load create today's (if the rule matches today). Missed days still count as missed, because those come from the rule.
 - **No backfill.** Past occurrences are never created, so coming back after two weeks away doesn't leave a pile of stale todos. Missed days are derived from the rule, not from rows (see below).
 - **Archiving** a habit stops generation. Its existing todos stay.
 - **Editing a rule** affects only future generation. Existing todos and completions stay.
-- **Deleting today's habit todo** doesn't skip the day: the next page load recreates it. Complete it instead, or archive the habit.
+- **Deleting today's habit todo** doesn't skip the day: the next page load recreates it, unless an older todo for the habit is still open. Complete it instead, or archive the habit.
 - `ensure_habit_todos(p_on)` accepts an explicit date. Tests use it.
 
 ## Missed days, streaks, and rates
