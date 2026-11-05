@@ -51,7 +51,7 @@ const SINGULAR: Record<AreaType, string> = {
   goal: "goal",
   project: "project",
   habit: "habit",
-  area: "area",
+  area: "domain",
   other: "other",
 };
 

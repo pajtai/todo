@@ -9,7 +9,7 @@ export const AREA_TYPE_LABELS: Record<AreaType, string> = {
   goal: "Goals",
   project: "Projects",
   habit: "Habits",
-  area: "Areas",
+  area: "Domains",
   other: "Other",
 };
 
