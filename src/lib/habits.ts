@@ -1,5 +1,6 @@
-// Pure helpers for habit recurrence. Which days a habit is expected comes from
-// the `habit_occurrences` RPC; these only label and summarize those rows.
+// Pure helpers for task recurrence and habit stats. Which days a repeating
+// task is expected comes from the `series_occurrences` RPC; these only label
+// and summarize those rows. A habit sums every repeating task attached to it.
 import { addDays, isDateString } from "@/lib/review";
 
 export const RECURRENCES = ["daily", "weekly", "weekdays"] as const;
@@ -92,6 +93,30 @@ export function parseRecurrence(formData: FormData): ParsedRecurrence {
 
 export type Occurrence = { area_id: string; day: string; done: boolean };
 
+/** Per scheduled day: true when every occurrence that day was done. */
+function doneByDay(occurrences: Occurrence[]) {
+  const days = new Map<string, boolean>();
+  for (const o of occurrences) {
+    days.set(o.day, (days.get(o.day) ?? true) && o.done);
+  }
+  return days;
+}
+
+/**
+ * Consecutive scheduled days, newest first, on which everything was done.
+ * Today only adds to the streak once it's done; an open today doesn't break it.
+ */
+export function habitStreak(occurrences: Occurrence[], today: string) {
+  const days = doneByDay(occurrences);
+  let streak = 0;
+  for (const day of [...days.keys()].sort().reverse()) {
+    if (day > today) continue;
+    if (days.get(day)) streak += 1;
+    else if (day !== today) break;
+  }
+  return streak;
+}
+
 /**
  * Completed vs expected occurrences. Today's occurrence only counts once it's
  * done, so an open day doesn't drag the rate down.
@@ -128,7 +153,7 @@ export function habitGrid(
   to: string,
   today: string,
 ): GridCell[] {
-  const byDay = new Map(occurrences.map((o) => [o.day, o.done]));
+  const byDay = doneByDay(occurrences);
   const cells: GridCell[] = [];
   for (let day = from; day <= to; day = addDays(day, 1)) {
     const done = byDay.get(day);

@@ -4,6 +4,7 @@ import {
   formatRate,
   habitGrid,
   habitRate,
+  habitStreak,
   parseRecurrence,
 } from "./habits";
 
@@ -97,5 +98,29 @@ describe("parseRecurrence", () => {
     expect(
       parseRecurrence(form([["recurrence", "daily"], ["starts_on", "2026-02-30"]])).error,
     ).toBeDefined();
+  });
+});
+
+describe("habitStreak", () => {
+  it("counts done days back to the last miss, ignoring an open today", () => {
+    const list = [
+      occ("2026-10-30", true),
+      occ("2026-10-31", false),
+      occ("2026-11-01", true),
+      occ("2026-11-02", true),
+      occ(today, false),
+    ];
+    expect(habitStreak(list, today)).toBe(2);
+    expect(habitStreak([...list.slice(0, 4), occ(today, true)], today)).toBe(3);
+  });
+
+  it("needs every task on a day done when a habit has several", () => {
+    const list = [
+      occ("2026-11-01", true),
+      occ("2026-11-02", true),
+      occ("2026-11-02", false),
+    ];
+    expect(habitStreak(list, today)).toBe(0);
+    expect(habitGrid(list, "2026-11-02", "2026-11-02", today)[0].status).toBe("missed");
   });
 });
