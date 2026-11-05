@@ -74,7 +74,7 @@ async function AreaDetail({
     <>
       <div className="flex flex-col gap-1">
         <Link href="/areas" className="text-sm text-gray-500 underline">
-          All areas
+          All intentions
         </Link>
         <h1 className="text-2xl font-semibold">{area.name}</h1>
         <p className="text-sm text-gray-500">

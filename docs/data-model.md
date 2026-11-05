@@ -32,6 +32,8 @@ Unchecking a todo clears `completed_at`, and checking it again records the new t
 
 The generic grouping for todos. `type` is the `area_type` enum: `project`, `goal`, `habit`, `area`, or `other`.
 
+The UI calls them **Intentions**: the nav link and the heading of `/areas`. The code, routes, and schema still say "area".
+
 | Column | Notes |
 | --- | --- |
 | `id`, `user_id` | Standard |

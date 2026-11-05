@@ -84,7 +84,7 @@ async function AreaLists() {
 export default function AreasPage() {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Areas</h1>
+      <h1 className="text-2xl font-semibold">Intentions</h1>
       <Suspense fallback={<p className="text-gray-500">Loading…</p>}>
         <AreaLists />
       </Suspense>
