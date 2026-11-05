@@ -152,6 +152,36 @@ export type Database = {
           },
         ]
       }
+      todo_series: {
+        Row: {
+          created_at: string
+          ended_on: string | null
+          id: string
+          recurrence: string
+          recurrence_days: number[] | null
+          starts_on: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ended_on?: string | null
+          id?: string
+          recurrence: string
+          recurrence_days?: number[] | null
+          starts_on: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          ended_on?: string | null
+          id?: string
+          recurrence?: string
+          recurrence_days?: number[] | null
+          starts_on?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           completed_at: string | null
@@ -161,6 +191,7 @@ export type Database = {
           id: string
           notes: string | null
           occurrence_date: string | null
+          series_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -173,6 +204,7 @@ export type Database = {
           id?: string
           notes?: string | null
           occurrence_date?: string | null
+          series_id?: string | null
           title: string
           updated_at?: string
           user_id?: string
@@ -185,6 +217,7 @@ export type Database = {
           id?: string
           notes?: string | null
           occurrence_date?: string | null
+          series_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -195,6 +228,13 @@ export type Database = {
             columns: ["habit_area_id"]
             isOneToOne: false
             referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todos_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "todo_series"
             referencedColumns: ["id"]
           },
         ]
@@ -256,6 +296,33 @@ export type Database = {
           title: string
           todo_id: string
         }[]
+      }
+      series_next_occurrence: {
+        Args: {
+          p_days: number[]
+          p_from: string
+          p_recurrence: string
+          p_starts_on: string
+        }
+        Returns: string
+      }
+      series_occurrences: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          area_id: string
+          day: string
+          done: boolean
+          series_id: string
+        }[]
+      }
+      set_todo_recurrence: {
+        Args: {
+          p_days: number[]
+          p_recurrence: string
+          p_starts_on: string
+          p_todo_id: string
+        }
+        Returns: undefined
       }
       user_today: { Args: never; Returns: string }
     }
