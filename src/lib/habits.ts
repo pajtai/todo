@@ -1,6 +1,6 @@
 // Pure helpers for habit recurrence. Which days a habit is expected comes from
 // the `habit_occurrences` RPC; these only label and summarize those rows.
-import { addDays } from "@/lib/review";
+import { addDays, isDateString } from "@/lib/review";
 
 export const RECURRENCES = ["daily", "weekly", "weekdays"] as const;
 export type Recurrence = (typeof RECURRENCES)[number];
@@ -39,6 +39,55 @@ export function describeRecurrence(rule: HabitRule) {
       .join(", ");
   }
   return RECURRENCE_LABELS[rule.recurrence];
+}
+
+export type ParsedRecurrence =
+  | { error: string }
+  | {
+      error?: undefined;
+      /** No start date given: the caller fills in the user's today. */
+      startsOnToday: boolean;
+      values: HabitRule;
+    };
+
+/**
+ * Reads the `recurrence`, `recurrence_days` and `starts_on` form fields. An
+ * empty recurrence means "doesn't repeat" and clears the rule.
+ */
+export function parseRecurrence(formData: FormData): ParsedRecurrence {
+  const recurrence = String(formData.get("recurrence") ?? "");
+  const startsOn = String(formData.get("starts_on") ?? "");
+  const days = [
+    ...new Set(
+      formData
+        .getAll("recurrence_days")
+        .map(Number)
+        .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6),
+    ),
+  ];
+  if (recurrence === "") {
+    return {
+      startsOnToday: false,
+      values: { recurrence: null, recurrence_days: null, starts_on: null },
+    };
+  }
+  if (!isRecurrence(recurrence)) {
+    return { error: "Choose how often it repeats." };
+  }
+  if (recurrence === "weekdays" && days.length === 0) {
+    return { error: "Pick at least one day." };
+  }
+  if (startsOn && !isDateString(startsOn)) {
+    return { error: "Enter a valid start date." };
+  }
+  return {
+    startsOnToday: !startsOn,
+    values: {
+      recurrence,
+      recurrence_days: recurrence === "weekdays" ? days : null,
+      starts_on: startsOn || null,
+    },
+  };
 }
 
 export type Occurrence = { area_id: string; day: string; done: boolean };

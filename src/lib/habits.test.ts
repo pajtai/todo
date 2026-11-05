@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { describeRecurrence, formatRate, habitGrid, habitRate } from "./habits";
+import {
+  describeRecurrence,
+  formatRate,
+  habitGrid,
+  habitRate,
+  parseRecurrence,
+} from "./habits";
 
 const today = "2026-11-03";
 const occ = (day: string, done: boolean) => ({ area_id: "h", day, done });
@@ -45,5 +51,51 @@ describe("habitGrid", () => {
       today,
     );
     expect(grid.map((c) => c.status)).toEqual(["off", "done", "missed", "pending"]);
+  });
+});
+
+describe("parseRecurrence", () => {
+  const form = (fields: [string, string][]) => {
+    const data = new FormData();
+    fields.forEach(([key, value]) => data.append(key, value));
+    return data;
+  };
+
+  it("clears the rule when it doesn't repeat", () => {
+    expect(parseRecurrence(form([["recurrence", ""]]))).toEqual({
+      startsOnToday: false,
+      values: { recurrence: null, recurrence_days: null, starts_on: null },
+    });
+  });
+
+  it("keeps days only for specific-day rules and defaults the start", () => {
+    expect(
+      parseRecurrence(
+        form([
+          ["recurrence", "weekdays"],
+          ["recurrence_days", "5"],
+          ["recurrence_days", "1"],
+          ["recurrence_days", "9"],
+          ["starts_on", "2026-11-02"],
+        ]),
+      ),
+    ).toEqual({
+      startsOnToday: false,
+      values: { recurrence: "weekdays", recurrence_days: [5, 1], starts_on: "2026-11-02" },
+    });
+    expect(
+      parseRecurrence(form([["recurrence", "daily"], ["recurrence_days", "1"]])),
+    ).toEqual({
+      startsOnToday: true,
+      values: { recurrence: "daily", recurrence_days: null, starts_on: null },
+    });
+  });
+
+  it("rejects bad input", () => {
+    expect(parseRecurrence(form([["recurrence", "hourly"]])).error).toBeDefined();
+    expect(parseRecurrence(form([["recurrence", "weekdays"]])).error).toBeDefined();
+    expect(
+      parseRecurrence(form([["recurrence", "daily"], ["starts_on", "2026-02-30"]])).error,
+    ).toBeDefined();
   });
 });

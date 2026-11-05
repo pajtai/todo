@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { AREA_TYPES, isUuid, type AreaType } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
-import { isRecurrence } from "@/lib/habits";
-import { isDateString } from "@/lib/review";
+import { parseRecurrence } from "@/lib/habits";
 import { createClient } from "@/lib/supabase/server";
 
 export type AreaActionResult = { error?: string };
@@ -31,39 +30,28 @@ function parseArea(formData: FormData) {
   }
 
   // Recurrence only applies to habits; other types always clear it.
-  const recurrence = String(formData.get("recurrence") ?? "");
-  const startsOn = String(formData.get("starts_on") ?? "");
+  const rule =
+    type === "habit"
+      ? parseRecurrence(formData)
+      : {
+          startsOnToday: false,
+          values: { recurrence: null, recurrence_days: null, starts_on: null },
+        };
+  if (rule.error !== undefined) {
+    return { error: rule.error };
+  }
+  const repeats = rule.values.recurrence !== null;
   const habitTitle = String(formData.get("habit_title") ?? "").trim();
-  const days = [
-    ...new Set(
-      formData
-        .getAll("recurrence_days")
-        .map(Number)
-        .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6),
-    ),
-  ];
-  const repeats = type === "habit" && recurrence !== "";
-  if (repeats && !isRecurrence(recurrence)) {
-    return { error: "Choose how often it repeats." };
-  }
-  if (repeats && recurrence === "weekdays" && days.length === 0) {
-    return { error: "Pick at least one day." };
-  }
-  if (repeats && startsOn && !isDateString(startsOn)) {
-    return { error: "Enter a valid start date." };
-  }
   if (habitTitle.length > MAX_TITLE_LENGTH) {
     return { error: `Keep the todo title under ${MAX_TITLE_LENGTH} characters.` };
   }
 
   return {
     // Null means "today in the user's timezone", filled in by the caller.
-    startsOnToday: repeats && !startsOn,
+    startsOnToday: rule.startsOnToday,
     values: {
-      recurrence: repeats ? recurrence : null,
-      recurrence_days: repeats && recurrence === "weekdays" ? days : null,
+      ...rule.values,
       habit_title: repeats && habitTitle ? habitTitle : null,
-      starts_on: repeats && startsOn ? startsOn : null,
       name,
       type: type as AreaType,
       parent_id: parentId || null,
