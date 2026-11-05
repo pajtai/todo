@@ -11,7 +11,7 @@ import {
 const INPUT_CLASS = "rounded border border-gray-300 px-3 py-2 text-black";
 
 // The `recurrence`, `starts_on` and `recurrence_days` fields read by
-// parseRecurrence. Used by the area form and the habit todo edit form.
+// parseRecurrence. Used by the todo edit form.
 export function RecurrenceFields({
   rule,
   onRecurrenceChange,

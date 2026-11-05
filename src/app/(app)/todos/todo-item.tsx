@@ -3,7 +3,7 @@
 import { useActionState, useOptimistic, useState, useTransition } from "react";
 import { AREA_TYPE_LABELS, AREA_TYPES, type AreaOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
-import type { HabitRule } from "@/lib/habits";
+import { describeRecurrence } from "@/lib/habits";
 import { AreaChip } from "../area-chip";
 import { RecurrenceFields } from "../recurrence-fields";
 import {
@@ -13,17 +13,24 @@ import {
   type TodoActionState,
 } from "./actions";
 
-/** The habit area a generated todo belongs to, with its rule. */
-export type TodoHabit = Pick<Tables<"areas">, "id" | "name"> & HabitRule;
+/** The repeat rule a todo belongs to. `ended_on` set means it stopped. */
+export type TodoSeries = Pick<
+  Tables<"todo_series">,
+  "id" | "recurrence" | "recurrence_days" | "starts_on" | "ended_on"
+>;
+
+/** The rule if the todo still repeats. */
+export function activeSeries(todo: Todo) {
+  return todo.series && !todo.series.ended_on ? todo.series : null;
+}
 
 export type Todo = Pick<
   Tables<"todos">,
   "id" | "title" | "notes" | "due_on" | "completed_at"
 > & {
   areas: AreaOption[];
-  habit_area_id?: string | null;
   created_at?: string;
-  habit?: TodoHabit | null;
+  series?: TodoSeries | null;
 };
 
 type TodoItemProps = {
@@ -33,6 +40,7 @@ type TodoItemProps = {
 
 export function TodoItem({ todo, areaOptions }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
+  const repeats = activeSeries(todo);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
   const [completed, setOptimisticCompleted] = useOptimistic(
@@ -85,9 +93,12 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
           className="flex flex-1 flex-col text-left"
         >
           <span className={completed ? "text-gray-500 line-through" : ""}>
-            {todo.habit_area_id && (
-              <span title="Repeating habit" className="mr-1 text-gray-500">
-                ↻<span className="sr-only">Habit:</span>
+            {repeats && (
+              <span
+                title={`Repeats: ${describeRecurrence(repeats)}`}
+                className="mr-1 text-gray-500"
+              >
+                ↻<span className="sr-only">Repeats:</span>
               </span>
             )}
             {todo.title}
@@ -242,17 +253,17 @@ export function EditForm({
           })}
         </fieldset>
       )}
-      {todo.habit && (
-        <fieldset className="flex flex-col gap-3 rounded border border-gray-200 p-3 text-sm">
-          <legend className="px-1">Repeats</legend>
-          <p className="text-gray-500">
-            Changes the &ldquo;{todo.habit.name}&rdquo; habit, so future todos
-            follow it too.
-          </p>
-          <input type="hidden" name="habit_id" value={todo.habit.id} />
-          <RecurrenceFields rule={todo.habit} />
-        </fieldset>
-      )}
+      <fieldset className="flex flex-col gap-3 rounded border border-gray-200 p-3 text-sm">
+        <legend className="px-1">Repeats</legend>
+        {/* Tells updateTodo the repeat fields were sent. */}
+        <input type="hidden" name="repeat" value="1" />
+        <RecurrenceFields rule={activeSeries(todo) ?? undefined} />
+        <p className="text-gray-500">
+          A new copy, with this title, notes, and areas, is added on each
+          scheduled day once this one is done. Attach it to a habit to track
+          it there.
+        </p>
+      </fieldset>
       {state.error && (
         <p role="alert" className="text-sm text-red-600">
           {state.error}

@@ -100,7 +100,7 @@ type Ctx = {
 
 type TodoDetails = Pick<
   Todo,
-  "notes" | "due_on" | "created_at" | "habit_area_id" | "habit"
+  "notes" | "due_on" | "created_at" | "series"
 >;
 
 // What the edit form needs: the row plus details `review_completed` lacks.
@@ -112,9 +112,8 @@ function editable(todo: ReviewTodo, ctx: Ctx): Todo {
     completed_at: todo.completed_at,
     notes: details?.notes ?? null,
     due_on: details?.due_on ?? null,
-    habit_area_id: details?.habit_area_id ?? null,
     created_at: details?.created_at,
-    habit: details?.habit ?? null,
+    series: details?.series ?? null,
     areas: todo.areas
       .filter((area) => area.depth === 0)
       .map(({ id, name, type, color }) => ({ id, name, type, color })),
@@ -382,7 +381,7 @@ async function Review({
       .select("id, name, type, color, parent_id, archived_at")
       .order("name"),
     state.group === "type"
-      ? supabase.rpc("habit_occurrences", {
+      ? supabase.rpc("series_occurrences", {
           p_from: period.from,
           p_to: period.to,
         })
@@ -392,7 +391,7 @@ async function Review({
     supabase
       .from("todos")
       .select(
-        "id, notes, due_on, created_at, habit_area_id, habit:areas!todos_habit_area_id_fkey(id, name, recurrence, recurrence_days, starts_on)",
+        "id, notes, due_on, created_at, series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
       )
       .gte("completed_at", `${addDays(period.from, -1)}T00:00:00Z`)
       .lt("completed_at", `${addDays(period.to, 2)}T00:00:00Z`),
@@ -440,9 +439,10 @@ async function Review({
   const showHabits =
     (!state.type || state.type === "habit") &&
     (!state.area || occurrencesByHabit.has(state.area));
+  // Each habit's rate covers every repeating task attached to it.
   const habitRates: HabitRate[] = showHabits
     ? (areas.data ?? []).flatMap((area) => {
-        const list = occurrencesByHabit.get(area.id);
+        const list = area.type === "habit" && occurrencesByHabit.get(area.id);
         if (!list || (state.area && state.area !== area.id)) return [];
         return [{ area, rate: formatRate(habitRate(list, today)) }];
       })

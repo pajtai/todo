@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isUuid } from "@/lib/areas";
-import type { TablesUpdate } from "@/lib/database.types";
+import type { Database, TablesUpdate } from "@/lib/database.types";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseRecurrence, type ParsedRecurrence } from "@/lib/habits";
@@ -89,14 +89,12 @@ export async function updateTodo(
   }
 
   // Validated up front so a bad rule doesn't leave a half-saved edit.
-  const habitId = formData.get("habit_id");
-  let habit: { id: string; rule: Exclude<ParsedRecurrence, { error: string }> } | undefined;
-  if (isUuid(habitId)) {
-    const rule = parseRecurrence(formData);
+  let rule: ParsedRecurrence | undefined;
+  if (formData.get("repeat") !== null) {
+    rule = parseRecurrence(formData);
     if (rule.error !== undefined) {
       return { error: rule.error };
     }
-    habit = { id: habitId, rule };
   }
 
   const supabase = await createClient();
@@ -123,19 +121,21 @@ export async function updateTodo(
     return { error: "Couldn't save your changes. Try again." };
   }
 
-  // Habit todos also edit the habit's rule. RLS limits this to own areas.
-  if (habit) {
-    const values = { ...habit.rule.values };
-    if (habit.rule.startsOnToday) {
-      const { data: today } = await supabase.rpc("user_today");
-      values.starts_on = today;
-    }
-    const { error: habitError } = await supabase
-      .from("areas")
-      .update(values)
-      .eq("id", habit.id)
-      .eq("type", "habit");
-    if (habitError) {
+  // Starts, changes, or stops the repeat. A null start keeps the current one
+  // (or today, for a new rule).
+  if (rule && rule.error === undefined) {
+    const { recurrence, recurrence_days, starts_on } = rule.values;
+    // The generated types mark these non-null, but the function takes null
+    // to mean "stop" / "no days" / "keep the start". Every argument must be
+    // sent, since the function has no defaults.
+    const args = {
+      p_todo_id: id,
+      p_recurrence: recurrence,
+      p_days: recurrence_days,
+      p_starts_on: starts_on,
+    } as Database["public"]["Functions"]["set_todo_recurrence"]["Args"];
+    const { error: repeatError } = await supabase.rpc("set_todo_recurrence", args);
+    if (repeatError) {
       return { error: "Saved the todo, but couldn't update how it repeats." };
     }
   }
