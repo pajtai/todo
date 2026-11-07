@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
-import { AREA_TYPE_LABELS, AREA_TYPES, type AreaOption } from "@/lib/areas";
+import type { AreaOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
 import { describeRecurrence } from "@/lib/habits";
 import { AreaChip } from "../area-chip";
@@ -227,30 +227,20 @@ export function EditForm({
       )}
       {pickable.length > 0 && (
         <fieldset className="flex flex-col gap-2 text-sm">
-          <legend className="mb-1">Areas</legend>
-          {AREA_TYPES.map((type) => {
-            const ofType = pickable.filter((area) => area.type === type);
-            return (
-              ofType.length > 0 && (
-                <div key={type} className="flex flex-wrap items-center gap-3">
-                  <span className="text-gray-500">
-                    {AREA_TYPE_LABELS[type]}
-                  </span>
-                  {ofType.map((area) => (
-                    <label key={area.id} className="flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        name="area_ids"
-                        value={area.id}
-                        defaultChecked={attachedIds.has(area.id)}
-                      />
-                      {area.name}
-                    </label>
-                  ))}
-                </div>
-              )
-            );
-          })}
+          <legend className="mb-1">Categories</legend>
+          <div className="flex flex-wrap items-center gap-3">
+            {pickable.map((area) => (
+              <label key={area.id} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  name="area_ids"
+                  value={area.id}
+                  defaultChecked={attachedIds.has(area.id)}
+                />
+                {area.name}
+              </label>
+            ))}
+          </div>
         </fieldset>
       )}
       <fieldset className="flex flex-col gap-3 rounded border border-gray-200 p-3 text-sm">
@@ -259,9 +249,9 @@ export function EditForm({
         <input type="hidden" name="repeat" value="1" />
         <RecurrenceFields rule={activeSeries(todo) ?? undefined} />
         <p className="text-gray-500">
-          A new copy, with this title, notes, and areas, is added on each
-          scheduled day once this one is done. Attach it to a habit to track
-          it there.
+          A new copy, with this title, notes, and categories, is added on each
+          scheduled day once this one is done. Its streak shows on the page of
+          each category it&apos;s in.
         </p>
       </fieldset>
       {state.error && (

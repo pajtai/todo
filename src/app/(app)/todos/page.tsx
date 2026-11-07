@@ -31,7 +31,7 @@ function AreaFilter({
     return null;
   }
   return (
-    <nav aria-label="Filter by area" className="flex flex-wrap gap-1.5">
+    <nav aria-label="Filter by category" className="flex flex-wrap gap-1.5">
       <Link
         href="/todos"
         aria-current={selectedId ? undefined : "true"}
@@ -62,8 +62,8 @@ async function TodoLists({
   const areaId = isUuid(area) ? area : undefined;
   const user = await getCurrentUser();
   const supabase = await createClient();
-  // Lazily creates today's habit todos before listing. Idempotent, and a
-  // failure only means habits are missing, so it doesn't block the page.
+  // Lazily creates today's repeating todos before listing. Idempotent, and a
+  // failure only means they're missing, so it doesn't block the page.
   await supabase.rpc("ensure_habit_todos");
 
   const [open, recent, profile, options] = await Promise.all([

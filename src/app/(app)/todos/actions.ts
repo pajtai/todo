@@ -143,7 +143,7 @@ export async function updateTodo(
   const areaIds = formData.getAll("area_ids").filter(isUuid);
   const areasError = await setTodoAreas(supabase, id, areaIds);
   if (areasError) {
-    return { error: "Saved, but couldn't update the areas. Try again." };
+    return { error: "Saved, but couldn't update the categories. Try again." };
   }
 
   revalidatePath("/", "layout");
