@@ -1,12 +1,6 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
-import {
-  AREA_TYPE_LABELS,
-  AREA_TYPES,
-  isUuid,
-  type AreaOption,
-  type AreaType,
-} from "@/lib/areas";
+import { isUuid, type AreaOption } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import {
   addDays,
@@ -17,9 +11,7 @@ import {
   formatDay,
   groupByArea,
   groupByDay,
-  groupByType,
   localDate,
-  parseAreaType,
   parseGroupBy,
   periodLabel,
   resolvePeriod,
@@ -48,17 +40,8 @@ import {
 } from "./review-grid";
 import { ReviewTodoItem } from "./review-todo-item";
 
-const SINGULAR: Record<AreaType, string> = {
-  goal: "goal",
-  project: "project",
-  habit: "habit",
-  area: "domain",
-  other: "other",
-};
-
 const GROUP_LABELS: Record<GroupBy, string> = {
-  area: "By area",
-  type: "By type",
+  area: "By category",
   day: "By day",
 };
 
@@ -117,7 +100,7 @@ function editable(todo: ReviewTodo, ctx: Ctx): Todo {
     series: details?.series ?? null,
     areas: todo.areas
       .filter((area) => area.depth === 0)
-      .map(({ id, name, type, color }) => ({ id, name, type, color })),
+      .map(({ id, name, color }) => ({ id, name, color })),
   };
 }
 
@@ -191,24 +174,6 @@ function Count({ n }: { n: number }) {
   return <span className="text-sm text-gray-500">{n}</span>;
 }
 
-function Unassigned({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
-  if (todos.length === 0) {
-    return null;
-  }
-  return (
-    <section className="flex flex-col gap-1">
-      <h2 className="flex items-center gap-2 font-medium">
-        Unassigned <Count n={todos.length} />
-      </h2>
-      <ul className="divide-y divide-gray-100">
-        {todos.map((todo) => (
-          <TodoLine key={todo.todo_id} todo={todo} ctx={ctx} showDate />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 function gridTodo(todo: ReviewTodo, ctx: Ctx): GridTodo {
   const time = new Date(todo.completed_at).toLocaleTimeString("en-US", {
     timeZone: ctx.timeZone,
@@ -280,55 +245,31 @@ function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
   return <ReviewGrid days={days} groups={groups} areaOptions={ctx.areaOptions} />;
 }
 
-type HabitRate = { area: AreaInfo; rate: string };
+type RepeatingRate = { area: AreaInfo; rate: string };
 
-function ByType({
-  todos,
+// Completion rate of each category's repeating tasks over the period.
+function RepeatingRates({
+  rates,
   ctx,
-  habits,
 }: {
-  todos: ReviewTodo[];
+  rates: RepeatingRate[];
   ctx: Ctx;
-  habits: HabitRate[];
 }) {
-  const unassigned = todos.filter((todo) => todo.areas.length === 0);
+  if (rates.length === 0) {
+    return null;
+  }
   return (
-    <>
-      {habits.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-medium">Habit completion</h2>
-          <ul className="ml-4 flex flex-col gap-1">
-            {habits.map(({ area, rate }) => (
-              <li key={area.id} className="flex items-center gap-2 text-sm">
-                <ReviewChip area={area} ctx={ctx} />
-                <span className="text-gray-500">{rate}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {groupByType(todos).map((group) => (
-        <section key={group.type} className="flex flex-col gap-2">
-          <h2 className="flex items-center gap-2 font-medium">
-            {AREA_TYPE_LABELS[group.type]} <Count n={group.count} />
-          </h2>
-          {group.areas.map(({ area, todos: areaTodos }) => (
-            <div key={area.id} className="ml-4 flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <ReviewChip area={area} ctx={ctx} />
-                <Count n={areaTodos.length} />
-              </div>
-              <ul className="ml-4 divide-y divide-gray-100">
-                {areaTodos.map((todo) => (
-                  <TodoLine key={todo.todo_id} todo={todo} ctx={ctx} showDate />
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-      ))}
-      <Unassigned todos={unassigned} ctx={ctx} />
-    </>
+    <section className="flex flex-col gap-2">
+      <h2 className="font-medium">Repeating tasks</h2>
+      <ul className="ml-4 flex flex-col gap-1">
+        {rates.map(({ area, rate }) => (
+          <li key={area.id} className="flex items-center gap-2 text-sm">
+            <ReviewChip area={area} ctx={ctx} />
+            <span className="text-gray-500">{rate}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -381,25 +322,22 @@ async function Review({
       today,
     ),
     group: parseGroupBy(first(params.group)),
-    type: parseAreaType(first(params.type)),
     area: isUuid(areaParam) ? areaParam : undefined,
   };
   const { period } = state;
 
-  // Same lazy generation as /todos, so today's habits count as expected.
+  // Same lazy generation as /todos, so today's repeating todos count as expected.
   await supabase.rpc("ensure_habit_todos");
   const [rows, areas, occurrences, details] = await Promise.all([
     supabase.rpc("review_completed", { p_from: period.from, p_to: period.to }),
     supabase
       .from("areas")
-      .select("id, name, type, color, parent_id, archived_at")
+      .select("id, name, color, parent_id, archived_at")
       .order("name"),
-    state.group === "type"
-      ? supabase.rpc("series_occurrences", {
-          p_from: period.from,
-          p_to: period.to,
-        })
-      : null,
+    supabase.rpc("series_occurrences", {
+      p_from: period.from,
+      p_to: period.to,
+    }),
     // Notes and due dates for the edit form. The UTC window is a day wider
     // on each side than the local period, which covers every timezone offset.
     supabase
@@ -428,7 +366,7 @@ async function Review({
     details: new Map((details.data ?? []).map((todo) => [todo.id, todo])),
     areaOptions: (areas.data ?? [])
       .filter((area) => area.archived_at === null)
-      .map(({ id, name, type, color }) => ({ id, name, type, color })),
+      .map(({ id, name, color }) => ({ id, name, color })),
   };
   const todos = filterTodos(toReviewTodos(rows.data), state);
   const summary = summarize(todos);
@@ -436,7 +374,6 @@ async function Review({
   const areaOptions = (areas.data ?? []).map((area) => ({
     id: area.id,
     name: area.name,
-    type: area.type,
     archived: area.archived_at !== null,
   }));
   const areaHrefs: Record<string, string> = {
@@ -446,22 +383,18 @@ async function Review({
     ),
   };
   const todayRange = { from: today, to: today };
-  const occurrencesByHabit = Map.groupBy(
-    (occurrences?.data ?? []) as Occurrence[],
+  const occurrencesByArea = Map.groupBy(
+    (occurrences.data ?? []) as Occurrence[],
     (o) => o.area_id,
   );
-  const showHabits =
-    (!state.type || state.type === "habit") &&
-    (!state.area || occurrencesByHabit.has(state.area));
-  // Each habit's rate covers every repeating task attached to it.
-  const habitRates: HabitRate[] = showHabits
-    ? (areas.data ?? []).flatMap((area) => {
-        const list = area.type === "habit" && occurrencesByHabit.get(area.id);
-        if (!list || (state.area && state.area !== area.id)) return [];
-        return [{ area, rate: formatRate(habitRate(list, today)) }];
-      })
-    : [];
-  const hidden = { group: state.group, type: state.type, area: state.area };
+  // Each category's rate covers every repeating task attached to it. With a
+  // category filter, only that category's rate is shown.
+  const repeatingRates: RepeatingRate[] = (areas.data ?? []).flatMap((area) => {
+    const list = occurrencesByArea.get(area.id);
+    if (!list || (state.area && state.area !== area.id)) return [];
+    return [{ area, rate: formatRate(habitRate(list, today)) }];
+  });
+  const hidden = { group: state.group, area: state.area };
 
   return (
     <>
@@ -568,20 +501,6 @@ async function Review({
           ))}
         </nav>
         <div className="flex flex-wrap items-center gap-2">
-          <nav aria-label="Filter by type" className="flex flex-wrap gap-1.5">
-            <Pill href={ctx.href({ type: null })} active={!state.type}>
-              All types
-            </Pill>
-            {AREA_TYPES.map((type) => (
-              <Pill
-                key={type}
-                href={ctx.href({ type })}
-                active={state.type === type}
-              >
-                {AREA_TYPE_LABELS[type]}
-              </Pill>
-            ))}
-          </nav>
           <AreaSelect
             areas={areaOptions}
             selected={state.area}
@@ -590,18 +509,17 @@ async function Review({
         </div>
       </div>
 
+      <RepeatingRates rates={repeatingRates} ctx={ctx} />
+
       {todos.length === 0 ? (
         <div className="flex flex-col items-start gap-2 text-gray-500">
           <p>
             Nothing completed {period.current ? "yet " : ""}in this period
-            {state.type || state.area ? " with these filters" : ""}.
+            {state.area ? " in this category" : ""}.
           </p>
-          {state.type || state.area ? (
-            <Link
-              href={ctx.href({ type: null, area: null })}
-              className="underline"
-            >
-              Clear filters
+          {state.area ? (
+            <Link href={ctx.href({ area: null })} className="underline">
+              Clear filter
             </Link>
           ) : (
             <Link
@@ -616,13 +534,6 @@ async function Review({
         <>
           <p aria-label="Summary" className="text-sm">
             <span className="font-medium">{summary.total} completed</span>
-            {summary.byType.map(({ type, count }) => (
-              <span key={type} className="text-gray-500">
-                {" · "}
-                {count}{" "}
-                {count === 1 ? SINGULAR[type] : AREA_TYPE_LABELS[type].toLowerCase()}
-              </span>
-            ))}
             {summary.unassigned > 0 && (
               <span className="text-gray-500">
                 {" · "}
@@ -632,9 +543,6 @@ async function Review({
           </p>
           <div className="flex flex-col gap-6">
             {state.group === "area" && <ByArea todos={todos} ctx={ctx} />}
-            {state.group === "type" && (
-              <ByType todos={todos} ctx={ctx} habits={habitRates} />
-            )}
             {state.group === "day" && <ByDay todos={todos} ctx={ctx} />}
           </div>
         </>

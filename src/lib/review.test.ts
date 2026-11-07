@@ -6,9 +6,9 @@ import {
   filterTodos,
   groupByArea,
   groupByDay,
-  groupByType,
   isDateString,
   localDate,
+  parseGroupBy,
   periodLabel,
   resolvePeriod,
   reviewHref,
@@ -20,7 +20,6 @@ import {
 const getFit: ReviewArea = {
   id: "fit",
   name: "Get fit",
-  type: "goal",
   color: null,
   parent_id: null,
   depth: 1,
@@ -28,7 +27,6 @@ const getFit: ReviewArea = {
 const marathon: ReviewArea = {
   id: "marathon",
   name: "Marathon training",
-  type: "project",
   color: "#ff0000",
   parent_id: "fit",
   depth: 0,
@@ -36,7 +34,6 @@ const marathon: ReviewArea = {
 const stretch: ReviewArea = {
   id: "stretch",
   name: "Stretch",
-  type: "habit",
   color: null,
   parent_id: null,
   depth: 0,
@@ -199,14 +196,14 @@ describe("reviewHref", () => {
     ).toBe("/review?period=day&group=day");
   });
 
-  it("keeps and clears filters", () => {
-    const filtered = { ...state, type: "habit" as const, area: "stretch" };
-    expect(reviewHref(filtered, {}, today)).toBe(
-      "/review?type=habit&area=stretch",
-    );
-    expect(reviewHref(filtered, { area: null }, today)).toBe(
-      "/review?type=habit",
-    );
+  it("keeps and clears the category filter", () => {
+    const filtered = { ...state, area: "stretch" };
+    expect(reviewHref(filtered, {}, today)).toBe("/review?area=stretch");
+    expect(reviewHref(filtered, { area: null }, today)).toBe("/review");
+  });
+
+  it("maps the retired By type grouping to the default", () => {
+    expect(parseGroupBy("type")).toBe("area");
   });
 });
 
@@ -220,22 +217,8 @@ describe("filterTodos and summarize", () => {
     ]);
   });
 
-  it("filters by type", () => {
-    expect(
-      filterTodos(todos, { type: "habit" }).map((t) => t.todo_id),
-    ).toEqual(["stretch", "both"]);
-  });
-
-  it("counts per type with roll-up", () => {
-    expect(summarize(todos)).toEqual({
-      total: 4,
-      unassigned: 1,
-      byType: [
-        { type: "project", count: 2 },
-        { type: "goal", count: 2 },
-        { type: "habit", count: 2 },
-      ],
-    });
+  it("counts the total and unassigned todos", () => {
+    expect(summarize(todos)).toEqual({ total: 4, unassigned: 1 });
   });
 });
 
@@ -292,23 +275,6 @@ describe("grid days", () => {
         ? { [run.completed_local_date]: 2 }
         : { [run.completed_local_date]: 1, [loose.completed_local_date]: 1 },
     );
-  });
-});
-
-describe("groupByType", () => {
-  it("lists areas of each type with their todos", () => {
-    const groups = groupByType([run, stretchToday, both]);
-    expect(
-      groups.map((g) => [
-        g.type,
-        g.count,
-        g.areas.map((a) => [a.area.name, a.todos.length]),
-      ]),
-    ).toEqual([
-      ["project", 2, [["Marathon training", 2]]],
-      ["goal", 2, [["Get fit", 2]]],
-      ["habit", 2, [["Stretch", 2]]],
-    ]);
   });
 });
 

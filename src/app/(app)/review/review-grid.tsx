@@ -235,7 +235,7 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
           <thead>
             <tr>
               <th className="sticky left-0 min-w-48 bg-white">
-                <span className="sr-only">Area or todo</span>
+                <span className="sr-only">Category or todo</span>
               </th>
               {days.map((day) => (
                 <th

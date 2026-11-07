@@ -1,12 +1,10 @@
 // Pure helpers for the Review view: periods, filtering, and grouping. They take
 // rows from the `review_completed` RPC and do no I/O, so they're unit-tested.
-import { AREA_TYPES, type AreaType } from "@/lib/areas";
 import type { Database } from "@/lib/database.types";
 
 export type ReviewArea = {
   id: string;
   name: string;
-  type: AreaType;
   color: string | null;
   parent_id: string | null;
   /** 0 = attached directly; 1+ = an ancestor of an attached area. */
@@ -199,29 +197,24 @@ export function periodLabel(period: Period, today: string) {
 // ---------------------------------------------------------------------------
 // URLs
 
-export const GROUP_BYS = ["area", "type", "day"] as const;
+export const GROUP_BYS = ["area", "day"] as const;
 export type GroupBy = (typeof GROUP_BYS)[number];
 
 export type ReviewState = {
   period: Period;
   group: GroupBy;
-  type?: AreaType;
   area?: string;
 };
 
+/** Unknown values, including the retired `type`, fall back to "area". */
 export function parseGroupBy(value: unknown): GroupBy {
   return GROUP_BYS.find((g) => g === value) ?? "area";
-}
-
-export function parseAreaType(value: unknown): AreaType | undefined {
-  return AREA_TYPES.find((t) => t === value);
 }
 
 export type HrefChanges = {
   /** For day/7d/30d only the end matters: it's the anchor date. */
   period?: Range & { kind: PeriodKind };
   group?: GroupBy;
-  type?: AreaType | null;
   area?: string | null;
 };
 
@@ -251,9 +244,6 @@ export function reviewHref(
   const group = changes.group ?? state.group;
   if (group !== "area") params.set("group", group);
 
-  const type = changes.type === undefined ? state.type : changes.type;
-  if (type) params.set("type", type);
-
   const area = changes.area === undefined ? state.area : changes.area;
   if (area) params.set("area", area);
 
@@ -265,31 +255,20 @@ export function reviewHref(
 // Filtering and grouping. A todo "belongs" to every area attached to it and to
 // all of their ancestors, which is what makes counts roll up.
 
-export type ReviewFilter = { type?: AreaType; area?: string };
+export type ReviewFilter = { area?: string };
 
 export function filterTodos(todos: ReviewTodo[], filter: ReviewFilter) {
   return todos.filter(
-    (todo) =>
-      (!filter.area || todo.areas.some((a) => a.id === filter.area)) &&
-      (!filter.type || todo.areas.some((a) => a.type === filter.type)),
+    (todo) => !filter.area || todo.areas.some((a) => a.id === filter.area),
   );
 }
 
-export type Summary = {
-  total: number;
-  unassigned: number;
-  byType: { type: AreaType; count: number }[];
-};
+export type Summary = { total: number; unassigned: number };
 
 export function summarize(todos: ReviewTodo[]): Summary {
   return {
     total: todos.length,
     unassigned: todos.filter((todo) => todo.areas.length === 0).length,
-    byType: AREA_TYPES.map((type) => ({
-      type,
-      count: todos.filter((todo) => todo.areas.some((a) => a.type === type))
-        .length,
-    })).filter((entry) => entry.count > 0),
   };
 }
 
@@ -307,8 +286,8 @@ export type AreaNode = {
 };
 
 function info(area: ReviewArea): AreaInfo {
-  const { id, name, type, color, parent_id } = area;
-  return { id, name, type, color, parent_id };
+  const { id, name, color, parent_id } = area;
+  return { id, name, color, parent_id };
 }
 
 function byCountThenName(a: AreaNode, b: AreaNode) {
@@ -358,37 +337,6 @@ export function groupByArea(todos: ReviewTodo[]): {
   sort(roots);
 
   return { roots, unassigned };
-}
-
-export type TypeGroup = {
-  type: AreaType;
-  count: number;
-  areas: { area: AreaInfo; todos: ReviewTodo[] }[];
-};
-
-export function groupByType(todos: ReviewTodo[]): TypeGroup[] {
-  return AREA_TYPES.map((type) => {
-    const areas = new Map<string, { area: AreaInfo; todos: ReviewTodo[] }>();
-    let count = 0;
-    for (const todo of todos) {
-      const ofType = todo.areas.filter((a) => a.type === type);
-      if (ofType.length > 0) count += 1;
-      for (const area of ofType) {
-        const entry = areas.get(area.id) ?? { area: info(area), todos: [] };
-        entry.todos.push(todo);
-        areas.set(area.id, entry);
-      }
-    }
-    return {
-      type,
-      count,
-      areas: [...areas.values()].sort(
-        (a, b) =>
-          b.todos.length - a.todos.length ||
-          a.area.name.localeCompare(b.area.name),
-      ),
-    };
-  }).filter((group) => group.count > 0);
 }
 
 export function groupByDay(
