@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { AREA_TYPES, isUuid, type AreaType } from "@/lib/areas";
+import { isUuid } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,7 +10,6 @@ export type AreaActionResult = { error?: string };
 const MAX_NAME_LENGTH = 100;
 
 function parseArea(formData: FormData) {
-  const type = String(formData.get("type"));
   const parentId = String(formData.get("parent_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
 
@@ -20,9 +19,6 @@ function parseArea(formData: FormData) {
   if (name.length > MAX_NAME_LENGTH) {
     return { error: `Keep the name under ${MAX_NAME_LENGTH} characters.` };
   }
-  if (!AREA_TYPES.includes(type as AreaType)) {
-    return { error: "Choose a type." };
-  }
   if (parentId && !isUuid(parentId)) {
     return { error: "Choose a valid parent." };
   }
@@ -30,7 +26,6 @@ function parseArea(formData: FormData) {
   return {
     values: {
       name,
-      type: type as AreaType,
       parent_id: parentId || null,
       color: String(formData.get("color") ?? "") || null,
       description: String(formData.get("description") ?? "").trim() || null,
@@ -41,7 +36,7 @@ function parseArea(formData: FormData) {
 function errorMessage(code: string) {
   switch (code) {
     case "23505":
-      return "You already have one of that type with this name.";
+      return "You already have a category with this name.";
     case "TD001":
       return "That parent is inside this one, which would create a loop.";
     case "TD002":

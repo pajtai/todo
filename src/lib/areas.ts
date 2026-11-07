@@ -1,17 +1,8 @@
-import { Constants, type Enums, type Tables } from "@/lib/database.types";
+import type { Tables } from "@/lib/database.types";
 
-export type AreaType = Enums<"area_type">;
-export type AreaOption = Pick<Tables<"areas">, "id" | "name" | "type" | "color">;
-
-export const AREA_TYPES = Constants.public.Enums.area_type;
-
-export const AREA_TYPE_LABELS: Record<AreaType, string> = {
-  goal: "Goals",
-  project: "Projects",
-  habit: "Habits",
-  area: "Domains",
-  other: "Other",
-};
+// Areas are called "categories" in the UI. They're all user-defined and work
+// the same way; the deprecated `areas.type` column is no longer used.
+export type AreaOption = Pick<Tables<"areas">, "id" | "name" | "color">;
 
 export function isUuid(value: unknown): value is string {
   return (

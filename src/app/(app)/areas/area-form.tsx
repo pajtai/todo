@@ -1,19 +1,13 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import {
-  AREA_TYPE_LABELS,
-  AREA_TYPES,
-  type AreaOption,
-  type AreaType,
-} from "@/lib/areas";
+import type { AreaOption } from "@/lib/areas";
 import type { AreaActionResult } from "./actions";
 
 const DEFAULT_COLOR = "#6b7280";
 
 export type AreaFormValues = {
   name: string;
-  type: AreaType;
   parent_id: string | null;
   color: string | null;
   description: string | null;
@@ -36,7 +30,6 @@ export function AreaForm({
 }: AreaFormProps) {
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
-  const [type, setType] = useState<AreaType>(area?.type ?? "project");
   const inputClass = "rounded border border-gray-300 px-3 py-2 text-black";
 
   // Submits by hand because a form `action` resets the fields, which would lose
@@ -50,7 +43,6 @@ export function AreaForm({
       setError(result.error);
       if (!result.error) {
         form.reset();
-        setType(area?.type ?? "project");
         onDone?.();
       }
     });
@@ -58,32 +50,15 @@ export function AreaForm({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-3">
-        <label className="flex flex-1 flex-col gap-1 text-sm">
-          Name
-          <input
-            name="name"
-            defaultValue={area?.name}
-            required
-            className={inputClass}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Type
-          <select
-            name="type"
-            value={type}
-            onChange={(event) => setType(event.target.value as AreaType)}
-            className={inputClass}
-          >
-            {AREA_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {AREA_TYPE_LABELS[type]}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <label className="flex flex-col gap-1 text-sm">
+        Name
+        <input
+          name="name"
+          defaultValue={area?.name}
+          required
+          className={inputClass}
+        />
+      </label>
       <div className="flex flex-wrap gap-3">
         <label className="flex flex-1 flex-col gap-1 text-sm">
           Parent
@@ -95,7 +70,7 @@ export function AreaForm({
             <option value="">None</option>
             {parents.map((parent) => (
               <option key={parent.id} value={parent.id}>
-                {parent.name} ({AREA_TYPE_LABELS[parent.type]})
+                {parent.name}
               </option>
             ))}
           </select>
@@ -119,12 +94,6 @@ export function AreaForm({
           className={inputClass}
         />
       </label>
-      {type === "habit" && (
-        <p className="text-sm text-gray-500">
-          To track a habit, attach tasks to it and set how they repeat when
-          you edit a task.
-        </p>
-      )}
       {error && (
         <p role="alert" className="text-sm text-red-600">
           {error}

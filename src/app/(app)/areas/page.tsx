@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { AREA_TYPE_LABELS, AREA_TYPES } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
@@ -12,15 +11,13 @@ async function AreaLists() {
   const supabase = await createClient();
   const { data: areas, error } = await supabase
     .from("areas")
-    .select(
-      "id, name, type, color, parent_id, description, archived_at",
-    )
+    .select("id, name, color, parent_id, description, archived_at")
     .order("name");
 
   if (error) {
     return (
       <p role="alert" className="text-red-600">
-        Couldn&apos;t load your areas. Try reloading.
+        Couldn&apos;t load your categories. Try reloading.
       </p>
     );
   }
@@ -38,11 +35,33 @@ async function AreaLists() {
         (parent.archived_at === null || parent.id === area.parent_id),
     );
 
-  const row = (area: (typeof areas)[number]) => (
+  // Active categories in tree order, each followed by its children. A child
+  // of an archived category is shown at the top level.
+  const activeIds = new Set(active.map((area) => area.id));
+  const childrenOf = Map.groupBy(active, (area) =>
+    area.parent_id && activeIds.has(area.parent_id) ? area.parent_id : null,
+  );
+  const tree: { area: (typeof areas)[number]; depth: number }[] = [];
+  const visit = (parentId: string | null, depth: number) => {
+    for (const area of childrenOf.get(parentId) ?? []) {
+      tree.push({ area, depth });
+      visit(area.id, depth + 1);
+    }
+  };
+  visit(null, 0);
+
+  // Nested rows are indented under their parent, so only top-level rows
+  // need to name one.
+  const row = (area: (typeof areas)[number], depth = 0) => (
     <AreaRow
       key={area.id}
       area={area}
-      parentName={area.parent_id ? namesById.get(area.parent_id) : undefined}
+      depth={depth}
+      parentName={
+        depth === 0 && area.parent_id
+          ? namesById.get(area.parent_id)
+          : undefined
+      }
       parents={parentsFor(area)}
     />
   );
@@ -55,26 +74,23 @@ async function AreaLists() {
       </section>
       {areas.length === 0 && (
         <p className="text-gray-500">
-          Nothing yet. Create a project, goal, or habit to group your todos.
+          Nothing yet. Create a category, such as a project, goal, or habit,
+          to group your todos.
         </p>
       )}
-      {AREA_TYPES.map((type) => {
-        const ofType = active.filter((area) => area.type === type);
-        return (
-          ofType.length > 0 && (
-            <section key={type} className="flex flex-col gap-1">
-              <h2 className="font-medium">{AREA_TYPE_LABELS[type]}</h2>
-              <ul className="divide-y divide-gray-200">{ofType.map(row)}</ul>
-            </section>
-          )
-        );
-      })}
+      {active.length > 0 && (
+        <ul className="divide-y divide-gray-200">
+          {tree.map(({ area, depth }) => row(area, depth))}
+        </ul>
+      )}
       {archived.length > 0 && (
         <details className="flex flex-col gap-1">
           <summary className="cursor-pointer font-medium">
             Archived ({archived.length})
           </summary>
-          <ul className="divide-y divide-gray-200">{archived.map(row)}</ul>
+          <ul className="divide-y divide-gray-200">
+            {archived.map((area) => row(area))}
+          </ul>
         </details>
       )}
     </>
@@ -84,7 +100,7 @@ async function AreaLists() {
 export default function AreasPage() {
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Intentions</h1>
+      <h1 className="text-2xl font-semibold">Categories</h1>
       <Suspense fallback={<p className="text-gray-500">Loading…</p>}>
         <AreaLists />
       </Suspense>

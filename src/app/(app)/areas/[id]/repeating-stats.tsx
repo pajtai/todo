@@ -43,8 +43,9 @@ function latestTitle(series: SeriesRow) {
   return latest?.title ?? "Untitled";
 }
 
-// Stats for a habit: every repeating task attached to it, combined.
-export async function HabitStats({
+// Streak and rate for every repeating task in a category, combined. Any
+// category can track them; it renders nothing when there are none.
+export async function RepeatingStats({
   supabase,
   areaId,
 }: {
@@ -81,15 +82,7 @@ export async function HabitStats({
     : { data: [] as SeriesRow[] };
 
   if (all.length === 0) {
-    return (
-      <section className="flex flex-col gap-1">
-        <h2 className="font-medium">Habit</h2>
-        <p className="text-sm text-gray-500">
-          No repeating tasks yet. Attach a task to this habit and set how it
-          repeats when you edit it.
-        </p>
-      </section>
-    );
+    return null;
   }
 
   const recent = all.filter((o) => o.day >= from);
@@ -98,7 +91,7 @@ export async function HabitStats({
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-medium">Habit</h2>
+      <h2 className="font-medium">Repeating tasks</h2>
       <ul className="flex flex-col gap-0.5 text-sm">
         {(series ?? []).map((row) => (
           <li key={row.id}>

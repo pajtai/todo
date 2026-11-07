@@ -9,7 +9,7 @@ export function selectTodos(supabase: Client, areaId?: string) {
   const query = supabase
     .from("todos")
     .select(
-      "id, title, notes, due_on, completed_at, created_at, areas!todo_areas(id, name, type, color), membership:todo_areas(area_id), series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
+      "id, title, notes, due_on, completed_at, created_at, areas!todo_areas(id, name, color), membership:todo_areas(area_id), series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
     );
   return areaId
     ? query.eq("membership.area_id", areaId).not("membership", "is", null)
@@ -19,7 +19,7 @@ export function selectTodos(supabase: Client, areaId?: string) {
 export function selectActiveAreas(supabase: Client) {
   return supabase
     .from("areas")
-    .select("id, name, type, color")
+    .select("id, name, color")
     .is("archived_at", null)
     .order("name");
 }

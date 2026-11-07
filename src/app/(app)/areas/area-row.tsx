@@ -8,15 +8,18 @@ import { AreaForm, type AreaFormValues } from "./area-form";
 
 type AreaRowProps = {
   area: AreaFormValues & { id: string; archived_at: string | null };
+  /** Nesting level in the list; each level is indented. */
+  depth?: number;
   parentName?: string;
   parents: AreaOption[];
 };
 
-export function AreaRow({ area, parentName, parents }: AreaRowProps) {
+export function AreaRow({ area, depth = 0, parentName, parents }: AreaRowProps) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
   const archived = area.archived_at !== null;
+  const indent = { paddingLeft: `${depth * 1.5}rem` };
 
   function toggleArchived() {
     startTransition(async () => {
@@ -27,7 +30,7 @@ export function AreaRow({ area, parentName, parents }: AreaRowProps) {
 
   function remove() {
     const confirmed = window.confirm(
-      `Delete "${area.name}"? Its todos stay, but lose this label.`,
+      `Delete "${area.name}"? Its todos stay, but lose this category. Subcategories move to the top level.`,
     );
     if (!confirmed) {
       return;
@@ -40,7 +43,7 @@ export function AreaRow({ area, parentName, parents }: AreaRowProps) {
 
   if (editing) {
     return (
-      <li className="py-3">
+      <li className="py-3" style={indent}>
         <AreaForm
           action={(formData) => updateArea(area.id, formData)}
           area={area}
@@ -53,7 +56,7 @@ export function AreaRow({ area, parentName, parents }: AreaRowProps) {
   }
 
   return (
-    <li className="flex flex-col gap-1 py-2">
+    <li className="flex flex-col gap-1 py-2" style={indent}>
       <div className="flex items-center gap-3">
         <span
           aria-hidden

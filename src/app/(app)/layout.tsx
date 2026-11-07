@@ -37,7 +37,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             Todos
           </Link>
           <Link href="/areas" className="text-sm hover:underline">
-            Intentions
+            Categories
           </Link>
           <Link href="/review" className="text-sm hover:underline">
             Review
