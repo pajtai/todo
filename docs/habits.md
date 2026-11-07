@@ -1,10 +1,10 @@
 # Habits and repeating tasks
 
-Any task can repeat. A **habit** is just an intention (`areas.type = 'habit'`) that repeating tasks are attached to, so "Exercise" can hold a daily run and a weekly swim. Completing those tasks drives the habit's streak on its page and its completion rate in Review (**By type**).
+Any task can repeat. There's no special habit type: a habit is whatever category you attach repeating tasks to, so a category "Exercise" can hold a daily run and a weekly swim. Completing those tasks drives that category's streak on its page and its completion rate in Review. Every category works this way; one with no repeating tasks shows no stats. (In the code, functions such as `habitStreak` and `ensure_habit_todos` keep their older names.)
 
 ## Rules
 
-Set a rule in a task's edit form under **Repeats** (on `/todos`, an intention's page, or `/review`). Intentions have no repeat settings. The rule is stored in a `todo_series` row, and every todo generated from it points back with `todos.series_id`:
+Set a rule in a task's edit form under **Repeats** (on `/todos`, a category's page, or `/review`). Categories have no repeat settings. The rule is stored in a `todo_series` row, and every todo generated from it points back with `todos.series_id`:
 
 | `recurrence` | Occurs on |
 | --- | --- |
@@ -24,7 +24,7 @@ Set a rule in a task's edit form under **Repeats** (on `/todos`, an intention's 
 
 There's no cron. `/todos` and `/review` call `ensure_habit_todos()` (the name predates the change) before they render. For each active series whose rule matches today, it creates today's todo, using the user's local date from `profiles.timezone` (`user_today()`).
 
-- **Copies the latest todo.** The new todo gets the title, notes, and areas of the series' most recent todo, so editing a task (renaming it, attaching it to a habit) carries forward.
+- **Copies the latest todo.** The new todo gets the title, notes, and categories of the series' most recent todo, so editing a task (renaming it, attaching it to a category) carries forward.
 - **One open todo per series.** A series with an incomplete todo, from any day, gets no new one. Completing or deleting it lets the next page load create today's (if the rule matches today). Missed days still count as missed, because those come from the rule.
 - **Idempotent.** The unique index on `todos (user_id, series_id, occurrence_date)` makes repeated calls, including concurrent ones, create nothing new.
 - **No backfill.** Past occurrences are never created. Missed days are derived from the rule, not from rows (see below).
@@ -33,11 +33,11 @@ There's no cron. `/todos` and `/review` call `ensure_habit_todos()` (the name pr
 
 ## Missed days, streaks, and rates
 
-`series_occurrences(p_from, p_to)` lists every day each series was expected in the range, with `done` = whether a completed todo exists for that `occurrence_date`. It never goes past today or past `ended_on`. Expected days start at the earlier of `starts_on` and the series' first occurrence row. Each row is repeated once per area the series' **most recent todo** is attached to (`area_id` is null when there are none), which is how a habit collects its tasks.
+`series_occurrences(p_from, p_to)` lists every day each series was expected in the range, with `done` = whether a completed todo exists for that `occurrence_date`. It never goes past today or past `ended_on`. Expected days start at the earlier of `starts_on` and the series' first occurrence row. Each row is repeated once per category the series' **most recent todo** is attached to (`area_id` is null when there are none), which is how a category collects its tasks.
 
-For a habit, the occurrences of all its tasks are combined (`src/lib/habits.ts`, unit-tested):
+For a category, the occurrences of all its repeating tasks are combined (`src/lib/habits.ts`, unit-tested):
 
-- **Rate** (habit page: last 30 days; Review: the selected period) = done occurrences / expected occurrences. Today counts toward "expected" only once it's done.
+- **Rate** (category page: last 30 days; Review: the selected period) = done occurrences / expected occurrences. Today counts toward "expected" only once it's done.
 - **Streak** (`habitStreak`): consecutive scheduled days, newest first, on which **every** task was done. An open today doesn't break it.
 - **Grid** (`habitGrid`): a day is done only if all of its tasks were done.
 
@@ -46,9 +46,9 @@ A todo completed late, say on Tuesday for Monday's occurrence, counts toward Mon
 ## UI
 
 - Task edit form: **Repeats** section on every task.
-- `/todos` and intention pages: repeating tasks show ↻, with the rule in the tooltip.
-- `/areas/[id]` for a habit: its repeating tasks and their rules, the current streak, the 30-day rate, and a 30-day grid (done / missed / due today / not scheduled). With no repeating tasks attached, it explains how to add one.
-- `/review?group=type`: "Habit completion" lists each habit's rate for the period.
+- `/todos` and category pages: repeating tasks show ↻, with the rule in the tooltip.
+- `/areas/[id]`, when the category has repeating tasks: a **Repeating tasks** section with each task and its rule, the current streak, the 30-day rate, and a 30-day grid (done / missed / due today / not scheduled). Rendered by `areas/[id]/repeating-stats.tsx`. Without repeating tasks the section is hidden.
+- `/review`: **Repeating tasks** lists each category's rate for the period, above the grouping (only the filtered category with `?area=`).
 
 ## Migration from habit rules
 

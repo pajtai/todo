@@ -31,20 +31,22 @@ Unchecking a todo clears `completed_at`, and checking it again records the new t
 
 ## `areas`
 
-The generic grouping for todos. `type` is the `area_type` enum: `project`, `goal`, `habit`, `area`, or `other`.
+The grouping for todos. The UI calls them **Categories**; the code, routes (`/areas`), URL params (`?area=`), and schema still say "area".
 
-The UI calls them **Intentions**: the nav link and the heading of `/areas`. The `area` type is labeled **Domains** (singular "domain"). The code, routes, URL params (`?type=area`), and schema still say "area".
+Every category is user-defined and works the same way. To group them (say, under "Projects" or "Habits"), nest them with `parent_id`. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
+
+Until November 2026 areas had a predefined type (project, goal, habit, domain, other) and the UI called them Intentions. Migration `*_categories.sql` dropped types from the app; existing areas kept their names, colors, parents, and todos.
 
 | Column | Notes |
 | --- | --- |
 | `id`, `user_id` | Standard |
-| `name` | Required, 1–100 characters. Unique per user and type, ignoring case, so a goal and a project can share a name |
-| `type` | `area_type` |
+| `name` | Required, 1–100 characters. Unique per user, ignoring case |
+| `type` | **Deprecated** `area_type` enum, default `other`, no longer read or written. Kept until the old deployed code is gone; a later migration should drop it and the enum |
 | `parent_id` | Optional parent area. Any type can sit under any type |
 | `color` | Optional `#rrggbb` |
 | `description` | Optional |
 | `archived_at` | Null means active |
-| `recurrence`, `recurrence_days`, `habit_title`, `starts_on` | Habit rule; only allowed when `type = 'habit'`. See [habits.md](habits.md) |
+| `recurrence`, `recurrence_days`, `habit_title`, `starts_on` | **Deprecated** habit rule, always null. See below |
 | `created_at`, `updated_at` | `updated_at` is maintained by a trigger |
 
 ### Hierarchy rules
@@ -57,7 +59,7 @@ The `check_area_parent()` trigger enforces these, and `src/app/(app)/areas/actio
 
 ### Archiving and deleting
 
-- **Archiving** hides an area from filters, new-todo pickers, and parent pickers, but it stays on existing todos and appears under "Archived" on `/areas`. Edit forms keep listing archived areas already attached to that todo or area, because saving would otherwise silently detach them.
+- **Archiving** hides a category from filters, new-todo pickers, and parent pickers, but it stays on existing todos and appears under "Archived" on `/areas`. Edit forms keep listing archived areas already attached to that todo or area, because saving would otherwise silently detach them.
 - **Deleting** removes the area and its links. The todos stay.
 
 ## `todo_areas`
@@ -97,8 +99,8 @@ Returns the caller's completed todos for a local date range with their areas and
 
 There's no seed file, because a seed would land in the one hosted database and users can't be created safely from SQL. To get data for trying the app or the Review view, create these on `/areas` and `/todos`:
 
-1. Goal "Get fit", project "Marathon training" with parent "Get fit", and habit "Stretch".
-2. Todo "Run 5k", attached to "Marathon training" and "Stretch".
+1. Categories "Get fit", "Marathon training" with parent "Get fit", and "Stretch".
+2. Todo "Run 5k", attached to "Marathon training" and "Stretch". Edit it and set it to repeat daily to see a streak on those categories' pages.
 
 To test past completions, backdate `completed_at` on one of your todos in Studio.
 

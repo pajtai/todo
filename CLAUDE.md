@@ -14,7 +14,7 @@
 - [Data model](docs/data-model.md) — tables and columns, area hierarchy and archiving rules, sample data, how database tests work
 - [Review](docs/review.md) — `review_completed` RPC, periods and timezones, roll-up grouping, URL params
 - [Deployment](docs/deployment.md) — Vercel project, env vars, shipping migrations, auth URLs, email limits, security checks
-- [Habits](docs/habits.md) — repeating tasks (todo_series), habits as intentions, lazy today-only generation, missed days, streaks and rates
+- [Habits](docs/habits.md) — repeating tasks (todo_series), streaks per category, lazy today-only generation, missed days, streaks and rates
 
 ## Next.js
 @AGENTS.md

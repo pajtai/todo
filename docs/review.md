@@ -1,6 +1,6 @@
 # Review
 
-`/review` lists completed todos for a period and shows which areas they belong to. It's the main reason the app exists.
+`/review` lists completed todos for a period and shows which categories (areas in the code) they belong to. It's the main reason the app exists.
 
 ## Data: `review_completed(p_from date, p_to date)`
 
@@ -10,7 +10,7 @@ A `security invoker` SQL function (migration `*_review.sql`), so RLS limits it t
 | --- | --- |
 | `todo_id`, `title`, `completed_at` | From `todos` |
 | `completed_local_date` | `completed_at` converted to the caller's `profiles.timezone` |
-| `areas` | JSON array of every directly attached area **and all its ancestors**, each listed once: `id`, `name`, `type`, `color`, `parent_id`, `depth` (0 = attached directly, 1+ = ancestor) |
+| `areas` | JSON array of every directly attached area **and all its ancestors**, each listed once: `id`, `name`, `color`, `parent_id`, `depth` (0 = attached directly, 1+ = ancestor). It also has the deprecated `type`, which the app ignores |
 
 The conversion to local time happens in SQL (`completed_at at time zone tz`), so a todo finished at 23:30 local time lands on that local day, not the UTC one. The period bounds are converted the same way.
 
@@ -36,15 +36,18 @@ Periods are rolling windows that end on a date, and never include future days.
 
 The `review_completed` rows are grouped in TypeScript (`src/lib/review.ts`, unit-tested in `src/lib/review.test.ts`, run with `npm test`):
 
-- **By area** (default, `?group=area`): a grid (`review/review-grid.tsx`) with one column per day of the period, newest on the left and one row per area and todo. Area rows follow `parent_id`, and each can be collapsed or expanded (plus "Collapse all"). A todo row has a filled box on the day it was done, in a darker shade of its area's color (gray for areas without a color and for Unassigned). An area row's box is filled (in the area's color, with a number when more than one) when any todo in it **or any area below it** was done that day, so a todo in "Marathon training" also fills "Get fit". The count beside an area uses the same roll-up. Todos are listed under the area they're attached to directly, and all completed todos of one repeating task (same `series_id`) share one row, named after the newest. Clicking the name edits the newest; clicking a filled box edits the todo done that day. Todos with no area go under "Unassigned". Long periods scroll sideways with the name column pinned.
-- **By type** (`?group=type`): for each area type, the areas of that type with the todos that roll up to them.
+- **By category** (default, `?group=area`): a grid (`review/review-grid.tsx`) with one column per day of the period, newest on the left and one row per area and todo. Area rows follow `parent_id`, and each can be collapsed or expanded (plus "Collapse all"). A todo row has a filled box on the day it was done, in a darker shade of its area's color (gray for areas without a color and for Unassigned). An area row's box is filled (in the area's color, with a number when more than one) when any todo in it **or any area below it** was done that day, so a todo in "Marathon training" also fills "Get fit". The count beside an area uses the same roll-up. Todos are listed under the area they're attached to directly, and all completed todos of one repeating task (same `series_id`) share one row, named after the newest. Clicking the name edits the newest; clicking a filled box edits the todo done that day. Todos with no area go under "Unassigned". Long periods scroll sideways with the name column pinned.
 - **By day** (`?group=day`): newest day first, each todo with breadcrumbs such as "Get fit › Marathon training".
 
 A todo attached to several areas appears under each of them, so the counts in the tree can add up to more than the total.
 
+Above the grouping, **Repeating tasks** lists the completion rate of each category's repeating tasks for the period (see [habits.md](habits.md)). It shows even when nothing was completed.
+
+The retired **By type** grouping (`?group=type`) falls back to By category, and `?type=` is ignored, so old links still work.
+
 ## Editing
 
-Click a todo on `/review` (its name in the grid, or the line in the other groupings) to edit it. It opens the same form as `/todos` (`EditForm` in `todos/todo-item.tsx`), which shows when the todo was created and, for habit todos, how it repeats (see [habits.md](habits.md)). The review adds one more field, **Done at**, a `datetime-local` input.
+Click a todo on `/review` (its name in the grid, or the line in the other groupings) to edit it. It opens the same form as `/todos` (`EditForm` in `todos/todo-item.tsx`), which shows when the todo was created and, for repeating todos, how it repeats (see [habits.md](habits.md)). The review adds one more field, **Done at**, a `datetime-local` input.
 
 - The page shows and accepts Done at on the wall clock of `profiles.timezone`, not the browser's, so it matches the times in the review. `src/lib/zoned-time.ts` converts in both directions (unit-tested). A time skipped by a DST jump moves forward.
 - `updateTodo` changes `completed_at` only when the form sends `completed_at`, so `/todos` edits never touch it. Malformed or future values are rejected.
@@ -53,7 +56,6 @@ Click a todo on `/review` (its name in the grid, or the line in the other groupi
 
 ## Filters
 
-- `?type=habit`: todos with any area of that type, attached directly or as an ancestor.
-- `?area=<id>`: todos in that area **including its descendants**. Area pages link here. Archived areas stay selectable, because reviews are historical.
+- `?area=<id>`: todos in that category **including its subcategories**. Category pages link here. Archived categories stay selectable (under "Archived"), because reviews are historical.
 
-The summary line counts per type with the same roll-up rule.
+The summary line shows the total and how many have no category.
