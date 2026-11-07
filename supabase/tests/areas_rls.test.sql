@@ -11,14 +11,14 @@ set local role authenticated;
 -- User B's data.
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000b","role":"authenticated"}', true);
 insert into public.todos (id, title) values ('00000000-0000-4000-8000-0000000000b1', 'B''s todo');
-insert into public.areas (id, name, type) values ('00000000-0000-4000-8000-0000000000b2', 'B''s goal', 'goal');
+insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000b2', 'B''s goal');
 
--- User A's data: project "child" under goal "root".
+-- User A's data: category "child" under category "root".
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
 insert into public.todos (id, title) values ('00000000-0000-4000-8000-0000000000a1', 'A''s todo');
-insert into public.areas (id, name, type) values ('00000000-0000-4000-8000-0000000000a2', 'root', 'goal');
-insert into public.areas (id, name, type, parent_id) values
-  ('00000000-0000-4000-8000-0000000000a3', 'child', 'project', '00000000-0000-4000-8000-0000000000a2');
+insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000a2', 'root');
+insert into public.areas (id, name, parent_id) values
+  ('00000000-0000-4000-8000-0000000000a3', 'child', '00000000-0000-4000-8000-0000000000a2');
 insert into public.todo_areas (todo_id, area_id) values
   ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a3');
 
@@ -82,14 +82,25 @@ begin
   end;
 
   begin
-    insert into public.areas (name, type) values ('ROOT', 'goal');
+    insert into public.areas (name) values ('ROOT');
     raise exception 'duplicate name was accepted';
   exception
     when unique_violation then null;
   end;
 
-  -- The same name is fine under a different type.
-  insert into public.areas (name, type) values ('root', 'project');
+  -- Names are unique per user, whatever the deprecated type says.
+  begin
+    insert into public.areas (name, type) values ('root', 'project');
+    raise exception 'duplicate name with another type was accepted';
+  exception
+    when unique_violation then null;
+  end;
+
+  -- Another user can use the same name.
+  if exists (select 1 from public.areas where lower(name) = 'b''s goal') then
+    raise exception 'saw another user''s area';
+  end if;
+  insert into public.areas (name) values ('B''s goal');
 
   -- area_paths.
   if (select jsonb_agg(jsonb_build_object('ancestor', ancestor_id, 'depth', depth) order by depth)

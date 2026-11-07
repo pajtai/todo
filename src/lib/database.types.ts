@@ -68,7 +68,7 @@ export type Database = {
           recurrence?: string | null
           recurrence_days?: number[] | null
           starts_on?: string | null
-          type: Database["public"]["Enums"]["area_type"]
+          type?: Database["public"]["Enums"]["area_type"]
           updated_at?: string
           user_id?: string
         }

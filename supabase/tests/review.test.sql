@@ -18,9 +18,9 @@ insert into public.todos (id, title, completed_at) values
   ('00000000-0000-4000-8000-0000000000b1', 'B''s todo', '2026-10-15 19:00:00+00');
 
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
-insert into public.areas (id, name, type) values ('00000000-0000-4000-8000-0000000000a2', 'root', 'goal');
-insert into public.areas (id, name, type, parent_id) values
-  ('00000000-0000-4000-8000-0000000000a3', 'child', 'project', '00000000-0000-4000-8000-0000000000a2');
+insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000a2', 'root');
+insert into public.areas (id, name, parent_id) values
+  ('00000000-0000-4000-8000-0000000000a3', 'child', '00000000-0000-4000-8000-0000000000a2');
 insert into public.todos (id, title, completed_at) values
   -- 23:30 on Oct 15 in Los Angeles, which is already Oct 16 in UTC.
   ('00000000-0000-4000-8000-0000000000a1', 'late', '2026-10-16 06:30:00+00'),

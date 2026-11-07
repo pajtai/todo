@@ -15,8 +15,8 @@ where id = '00000000-0000-4000-8000-00000000000a';
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
 
-insert into public.areas (id, name, type) values
-  ('00000000-0000-4000-8000-0000000000e1', 'Exercise', 'habit');
+insert into public.areas (id, name) values
+  ('00000000-0000-4000-8000-0000000000e1', 'Exercise');
 insert into public.todos (id, title, notes) values
   ('00000000-0000-4000-8000-0000000000d1', 'Run', 'Easy pace'),
   ('00000000-0000-4000-8000-0000000000d2', 'Swim', null),
