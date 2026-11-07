@@ -12,9 +12,16 @@ type AreaRowProps = {
   depth?: number;
   parentName?: string;
   parents: AreaOption[];
+  hasChildren?: boolean;
 };
 
-export function AreaRow({ area, depth = 0, parentName, parents }: AreaRowProps) {
+export function AreaRow({
+  area,
+  depth = 0,
+  parentName,
+  parents,
+  hasChildren,
+}: AreaRowProps) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
@@ -48,6 +55,7 @@ export function AreaRow({ area, depth = 0, parentName, parents }: AreaRowProps) 
           action={(formData) => updateArea(area.id, formData)}
           area={area}
           parents={parents}
+          hasChildren={hasChildren}
           submitLabel="Save"
           onDone={() => setEditing(false)}
         />

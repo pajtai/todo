@@ -38,9 +38,13 @@ function errorMessage(code: string) {
     case "23505":
       return "You already have a category with this name.";
     case "TD001":
-      return "That parent is inside this one, which would create a loop.";
+      return "A category can't be its own parent.";
     case "TD002":
       return "That parent no longer exists.";
+    case "TD003":
+      return "That parent is a subcategory. Choose a top-level category.";
+    case "TD004":
+      return "This category has subcategories, so it can't have a parent.";
     default:
       return "Couldn't save. Try again.";
   }
