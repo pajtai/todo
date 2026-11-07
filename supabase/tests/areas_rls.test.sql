@@ -57,14 +57,38 @@ begin
     when insufficient_privilege then null;
   end;
 
-  -- Hierarchy rules.
+  -- Hierarchy rules. Categories nest one level deep.
   begin
     update public.areas set parent_id = '00000000-0000-4000-8000-0000000000a3'
     where id = '00000000-0000-4000-8000-0000000000a2';
     raise exception 'cycle was accepted';
   exception
-    when sqlstate 'TD001' then null;
+    when sqlstate 'TD003' then null;
   end;
+
+  begin
+    insert into public.areas (name, parent_id)
+    values ('grandchild', '00000000-0000-4000-8000-0000000000a3');
+    raise exception 'a grandchild was accepted';
+  exception
+    when sqlstate 'TD003' then null;
+  end;
+
+  insert into public.areas (id, name)
+  values ('00000000-0000-4000-8000-0000000000a6', 'other root');
+  begin
+    update public.areas set parent_id = '00000000-0000-4000-8000-0000000000a6'
+    where id = '00000000-0000-4000-8000-0000000000a2';
+    raise exception 'a category with subcategories was given a parent';
+  exception
+    when sqlstate 'TD004' then null;
+  end;
+
+  -- A top-level category without children can become a subcategory.
+  update public.areas set parent_id = '00000000-0000-4000-8000-0000000000a2'
+  where id = '00000000-0000-4000-8000-0000000000a6';
+  update public.areas set parent_id = null
+  where id = '00000000-0000-4000-8000-0000000000a6';
 
   begin
     update public.areas set parent_id = id where id = '00000000-0000-4000-8000-0000000000a2';
