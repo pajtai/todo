@@ -31,7 +31,9 @@ Unchecking a todo clears `completed_at`, and checking it again records the new t
 
 ## `areas`
 
-The grouping for todos. The UI calls them **Categories**; the code, routes (`/areas`), URL params (`?area=`), and schema still say "area".
+The grouping for todos. The UI, routes (`/categories`, `/categories/[id]`), and URL params (`?category=`) say **category**; the code and schema still say "area" (`areas`, `AreaChip`, `area_id`).
+
+Old links keep working: `next.config.ts` redirects `/areas` and `/areas/:id` to `/categories`, and `/todos` and `/review` still accept the old `?area=` param.
 
 Every category is user-defined and works the same way. To group them (say, under "Projects" or "Habits"), nest them with `parent_id`. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
 
@@ -51,7 +53,7 @@ Until November 2026 areas had a predefined type (project, goal, habit, domain, o
 
 ### Hierarchy rules
 
-The `check_area_parent()` trigger enforces these, and `src/app/(app)/areas/actions.ts` turns the error codes into messages:
+The `check_area_parent()` trigger enforces these, and `src/app/(app)/categories/actions.ts` turns the error codes into messages:
 
 - A parent must exist and belong to the same user (`TD002`).
 - A parent can't be the area itself or one of its descendants (`TD001`).
@@ -59,7 +61,7 @@ The `check_area_parent()` trigger enforces these, and `src/app/(app)/areas/actio
 
 ### Archiving and deleting
 
-- **Archiving** hides a category from filters, new-todo pickers, and parent pickers, but it stays on existing todos and appears under "Archived" on `/areas`. Edit forms keep listing archived areas already attached to that todo or area, because saving would otherwise silently detach them.
+- **Archiving** hides a category from filters, new-todo pickers, and parent pickers, but it stays on existing todos and appears under "Archived" on `/categories`. Edit forms keep listing archived areas already attached to that todo or area, because saving would otherwise silently detach them.
 - **Deleting** removes the area and its links. The todos stay.
 
 ## `todo_areas`
@@ -75,7 +77,7 @@ Each area paired with itself (depth 0) and every ancestor (depth 1, 2, …). It'
 | Marathon training | Marathon training | 0 |
 | Marathon training | Get fit | 1 |
 
-Area pages and the `?area=` filter on `/todos` show only todos attached directly to that area, not those on its descendants. Use `area_paths` when you need roll-up.
+Category pages and the `?category=` filter on `/todos` show only todos attached directly to that area, not those on its descendants. Use `area_paths` when you need roll-up.
 
 ## Embedding areas in todo queries
 
@@ -97,7 +99,7 @@ Returns the caller's completed todos for a local date range with their areas and
 
 ## Sample data
 
-There's no seed file, because a seed would land in the one hosted database and users can't be created safely from SQL. To get data for trying the app or the Review view, create these on `/areas` and `/todos`:
+There's no seed file, because a seed would land in the one hosted database and users can't be created safely from SQL. To get data for trying the app or the Review view, create these on `/categories` and `/todos`:
 
 1. Categories "Get fit", "Marathon training" with parent "Get fit", and "Stretch".
 2. Todo "Run 5k", attached to "Marathon training" and "Stretch". Edit it and set it to repeat daily to see a streak on those categories' pages.

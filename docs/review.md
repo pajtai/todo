@@ -36,14 +36,14 @@ Periods are rolling windows that end on a date, and never include future days.
 
 The `review_completed` rows are grouped in TypeScript (`src/lib/review.ts`, unit-tested in `src/lib/review.test.ts`, run with `npm test`):
 
-- **By category** (default, `?group=area`): a grid (`review/review-grid.tsx`) with one column per day of the period, newest on the left and one row per area and todo. Area rows follow `parent_id`, and each can be collapsed or expanded (plus "Collapse all"). A todo row has a filled box on the day it was done, in a darker shade of its area's color (gray for areas without a color and for Unassigned). An area row's box is filled (in the area's color, with a number when more than one) when any todo in it **or any area below it** was done that day, so a todo in "Marathon training" also fills "Get fit". The count beside an area uses the same roll-up. Todos are listed under the area they're attached to directly, and all completed todos of one repeating task (same `series_id`) share one row, named after the newest. Clicking the name edits the newest; clicking a filled box edits the todo done that day. Todos with no area go under "Unassigned". Long periods scroll sideways with the name column pinned.
+- **By category** (default, `?group=category`): a grid (`review/review-grid.tsx`) with one column per day of the period, newest on the left and one row per area and todo. Area rows follow `parent_id`, and each can be collapsed or expanded (plus "Collapse all"). A todo row has a filled box on the day it was done, in a darker shade of its area's color (gray for areas without a color and for Unassigned). An area row's box is filled (in the area's color, with a number when more than one) when any todo in it **or any area below it** was done that day, so a todo in "Marathon training" also fills "Get fit". The count beside an area uses the same roll-up. Todos are listed under the area they're attached to directly, and all completed todos of one repeating task (same `series_id`) share one row, named after the newest. Clicking the name edits the newest; clicking a filled box edits the todo done that day. Todos with no area go under "Unassigned". Long periods scroll sideways with the name column pinned.
 - **By day** (`?group=day`): newest day first, each todo with breadcrumbs such as "Get fit › Marathon training".
 
 A todo attached to several areas appears under each of them, so the counts in the tree can add up to more than the total.
 
 Above the grouping, **Repeating tasks** lists the completion rate of each category's repeating tasks for the period (see [habits.md](habits.md)). It shows even when nothing was completed.
 
-The retired **By type** grouping (`?group=type`) falls back to By category, and `?type=` is ignored, so old links still work.
+The retired **By type** grouping (`?group=type`) and the old `?group=area` fall back to By category, and `?type=` is ignored, so old links still work.
 
 ## Editing
 
@@ -56,6 +56,6 @@ Click a todo on `/review` (its name in the grid, or the line in the other groupi
 
 ## Filters
 
-- `?area=<id>`: todos in that category **including its subcategories**. Category pages link here. Archived categories stay selectable (under "Archived"), because reviews are historical.
+- `?category=<id>` (formerly `?area=`, still accepted): todos in that category **including its subcategories**. Category pages link here. Archived categories stay selectable (under "Archived"), because reviews are historical.
 
 The summary line shows the total and how many have no category.

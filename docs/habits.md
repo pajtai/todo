@@ -47,8 +47,8 @@ A todo completed late, say on Tuesday for Monday's occurrence, counts toward Mon
 
 - Task edit form: **Repeats** section on every task.
 - `/todos` and category pages: repeating tasks show ↻, with the rule in the tooltip.
-- `/areas/[id]`, when the category has repeating tasks: a **Repeating tasks** section with each task and its rule, the current streak, the 30-day rate, and a 30-day grid (done / missed / due today / not scheduled). Rendered by `areas/[id]/repeating-stats.tsx`. Without repeating tasks the section is hidden.
-- `/review`: **Repeating tasks** lists each category's rate for the period, above the grouping (only the filtered category with `?area=`).
+- `/categories/[id]`, when the category has repeating tasks: a **Repeating tasks** section with each task and its rule, the current streak, the 30-day rate, and a 30-day grid (done / missed / due today / not scheduled). Rendered by `categories/[id]/repeating-stats.tsx`. Without repeating tasks the section is hidden.
+- `/review`: **Repeating tasks** lists each category's rate for the period, above the grouping (only the filtered category with `?category=`).
 
 ## Migration from habit rules
 
