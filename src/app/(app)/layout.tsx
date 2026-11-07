@@ -36,7 +36,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <Link href="/todos" className="text-sm hover:underline">
             Todos
           </Link>
-          <Link href="/areas" className="text-sm hover:underline">
+          <Link href="/categories" className="text-sm hover:underline">
             Categories
           </Link>
           <Link href="/review" className="text-sm hover:underline">

@@ -174,7 +174,7 @@ describe("resolvePeriod", () => {
 
 describe("reviewHref", () => {
   const today = "2026-11-03";
-  const state = { period: resolvePeriod({}, today), group: "area" as const };
+  const state = { period: resolvePeriod({}, today), group: "category" as const };
 
   it("omits defaults", () => {
     expect(reviewHref(state, {}, today)).toBe("/review");
@@ -198,12 +198,14 @@ describe("reviewHref", () => {
 
   it("keeps and clears the category filter", () => {
     const filtered = { ...state, area: "stretch" };
-    expect(reviewHref(filtered, {}, today)).toBe("/review?area=stretch");
+    expect(reviewHref(filtered, {}, today)).toBe("/review?category=stretch");
     expect(reviewHref(filtered, { area: null }, today)).toBe("/review");
   });
 
-  it("maps the retired By type grouping to the default", () => {
-    expect(parseGroupBy("type")).toBe("area");
+  it("maps the retired By type grouping and the old name to the default", () => {
+    expect(parseGroupBy("type")).toBe("category");
+    expect(parseGroupBy("area")).toBe("category");
+    expect(parseGroupBy("day")).toBe("day");
   });
 });
 

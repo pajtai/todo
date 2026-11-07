@@ -10,7 +10,7 @@ type AreaChipProps = {
 export function AreaChip({ area, href, active }: AreaChipProps) {
   return (
     <Link
-      href={href ?? `/areas/${area.id}`}
+      href={href ?? `/categories/${area.id}`}
       aria-current={active ? "true" : undefined}
       className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${
         active ? "border-black font-medium" : "border-gray-300"

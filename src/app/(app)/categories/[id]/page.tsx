@@ -14,7 +14,7 @@ const COMPLETED_LIMIT = 50;
 async function AreaDetail({
   params,
 }: {
-  params: PageProps<"/areas/[id]">["params"];
+  params: PageProps<"/categories/[id]">["params"];
 }) {
   const { id } = await params;
   if (!isUuid(id)) {
@@ -71,7 +71,7 @@ async function AreaDetail({
   return (
     <>
       <div className="flex flex-col gap-1">
-        <Link href="/areas" className="text-sm text-gray-500 underline">
+        <Link href="/categories" className="text-sm text-gray-500 underline">
           All categories
         </Link>
         <h1 className="text-2xl font-semibold">{area.name}</h1>
@@ -79,7 +79,7 @@ async function AreaDetail({
           <p className="text-sm text-gray-500">Archived</p>
         )}
         <Link
-          href={`/review?area=${area.id}`}
+          href={`/review?category=${area.id}`}
           className="text-sm underline"
         >
           Review completed todos, including subcategories
@@ -122,7 +122,7 @@ async function AreaDetail({
   );
 }
 
-export default function AreaPage({ params }: PageProps<"/areas/[id]">) {
+export default function AreaPage({ params }: PageProps<"/categories/[id]">) {
   return (
     <div className="flex flex-col gap-6">
       <Suspense fallback={<p className="text-gray-500">Loading…</p>}>

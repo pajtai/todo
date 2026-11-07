@@ -64,7 +64,7 @@ export function AreaRow({ area, depth = 0, parentName, parents }: AreaRowProps) 
           style={{ backgroundColor: area.color ?? undefined }}
         />
         <div className="flex flex-1 flex-col">
-          <Link href={`/areas/${area.id}`} className="hover:underline">
+          <Link href={`/categories/${area.id}`} className="hover:underline">
             {area.name}
           </Link>
           {parentName && (

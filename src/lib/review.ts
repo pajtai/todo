@@ -197,7 +197,7 @@ export function periodLabel(period: Period, today: string) {
 // ---------------------------------------------------------------------------
 // URLs
 
-export const GROUP_BYS = ["area", "day"] as const;
+export const GROUP_BYS = ["category", "day"] as const;
 export type GroupBy = (typeof GROUP_BYS)[number];
 
 export type ReviewState = {
@@ -206,9 +206,12 @@ export type ReviewState = {
   area?: string;
 };
 
-/** Unknown values, including the retired `type`, fall back to "area". */
+/**
+ * Unknown values, including the retired `type` and the old name `area`, fall
+ * back to "category".
+ */
 export function parseGroupBy(value: unknown): GroupBy {
-  return GROUP_BYS.find((g) => g === value) ?? "area";
+  return GROUP_BYS.find((g) => g === value) ?? "category";
 }
 
 export type HrefChanges = {
@@ -242,10 +245,10 @@ export function reviewHref(
   }
 
   const group = changes.group ?? state.group;
-  if (group !== "area") params.set("group", group);
+  if (group !== "category") params.set("group", group);
 
   const area = changes.area === undefined ? state.area : changes.area;
-  if (area) params.set("area", area);
+  if (area) params.set("category", area);
 
   const query = params.toString();
   return query ? `/review?${query}` : "/review";

@@ -45,7 +45,7 @@ function AreaFilter({
         <AreaChip
           key={area.id}
           area={area}
-          href={`/todos?area=${area.id}`}
+          href={`/todos?category=${area.id}`}
           active={area.id === selectedId}
         />
       ))}
@@ -58,8 +58,10 @@ async function TodoLists({
 }: {
   searchParams: PageProps<"/todos">["searchParams"];
 }) {
-  const { area } = await searchParams;
-  const areaId = isUuid(area) ? area : undefined;
+  // `area` is the old name of the param; old links still filter.
+  const { category, area } = await searchParams;
+  const selected = category ?? area;
+  const areaId = isUuid(selected) ? selected : undefined;
   const user = await getCurrentUser();
   const supabase = await createClient();
   // Lazily creates today's repeating todos before listing. Idempotent, and a

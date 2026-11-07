@@ -41,7 +41,7 @@ import {
 import { ReviewTodoItem } from "./review-todo-item";
 
 const GROUP_LABELS: Record<GroupBy, string> = {
-  area: "By category",
+  category: "By category",
   day: "By day",
 };
 
@@ -310,7 +310,8 @@ async function Review({
   const timeZone = profile?.timezone ?? "UTC";
   const today = localDate(new Date(), timeZone);
 
-  const areaParam = first(params.area);
+  // `area` is the old name of the param; old links still filter.
+  const areaParam = first(params.category) ?? first(params.area);
   const state: ReviewState = {
     period: resolvePeriod(
       {
@@ -394,7 +395,8 @@ async function Review({
     if (!list || (state.area && state.area !== area.id)) return [];
     return [{ area, rate: formatRate(habitRate(list, today)) }];
   });
-  const hidden = { group: state.group, area: state.area };
+  // Keeps the other params when submitting a custom range.
+  const hidden = { group: state.group, category: state.area };
 
   return (
     <>
@@ -475,7 +477,7 @@ async function Review({
           {Object.entries(hidden).map(
             ([name, value]) =>
               value &&
-              !(name === "group" && value === "area") && (
+              !(name === "group" && value === "category") && (
                 <input key={name} type="hidden" name={name} value={value} />
               ),
           )}
@@ -542,7 +544,7 @@ async function Review({
             )}
           </p>
           <div className="flex flex-col gap-6">
-            {state.group === "area" && <ByArea todos={todos} ctx={ctx} />}
+            {state.group === "category" && <ByArea todos={todos} ctx={ctx} />}
             {state.group === "day" && <ByDay todos={todos} ctx={ctx} />}
           </div>
         </>
