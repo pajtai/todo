@@ -35,7 +35,7 @@ The grouping for todos. The UI, routes (`/categories`, `/categories/[id]`), and 
 
 Old links keep working: `next.config.ts` redirects `/areas` and `/areas/:id` to `/categories`, and `/todos` and `/review` still accept the old `?area=` param.
 
-Every category is user-defined and works the same way. To group them (say, under "Projects" or "Habits"), nest them with `parent_id`. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
+Every category is user-defined and works the same way. To group them (say, under "Projects" or "Habits"), nest them with `parent_id`, one level deep: a category can have a parent, but not a grandparent. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
 
 Until November 2026 areas had a predefined type (project, goal, habit, domain, other) and the UI called them Intentions. Migration `*_categories.sql` dropped types from the app; existing areas kept their names, colors, parents, and todos.
 
@@ -55,9 +55,13 @@ Until November 2026 areas had a predefined type (project, goal, habit, domain, o
 
 The `check_area_parent()` trigger enforces these, and `src/app/(app)/categories/actions.ts` turns the error codes into messages:
 
+- A category can't be its own parent (`TD001`).
 - A parent must exist and belong to the same user (`TD002`).
-- A parent can't be the area itself or one of its descendants (`TD001`).
+- A parent must be top-level: categories nest one level deep (`TD003`).
+- A category with subcategories, archived ones included, can't get a parent (`TD004`). The edit form says so instead of offering a Parent picker, and only lists top-level categories as parents.
 - Deleting a parent keeps its children, which become top-level.
+
+Migration `*_single_level_categories.sql` added `TD003` and `TD004` and moved any deeper category onto its top-level ancestor.
 
 ### Archiving and deleting
 
@@ -70,7 +74,7 @@ Many-to-many link between todos and areas. Its insert policy also requires that 
 
 ## `area_paths` view
 
-Each area paired with itself (depth 0) and every ancestor (depth 1, 2, …). It's `security_invoker`, so RLS applies. The Review view uses it to roll completions up the hierarchy.
+Each area paired with itself (depth 0) and its ancestors (depth 1; nesting is one level deep, but the view would handle more). It's `security_invoker`, so RLS applies. The Review view uses it to roll completions up the hierarchy.
 
 | `area_id` | `ancestor_id` | `depth` |
 | --- | --- | --- |

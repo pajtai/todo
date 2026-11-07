@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useState, type ReactNode } from "react";
 import type { AreaOption } from "@/lib/areas";
 import type { AreaInfo } from "@/lib/review";
@@ -81,18 +82,26 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
     });
   }
 
+  // A top-level group (depth 0) is a section with a shaded header row; its
+  // subcategories (depth 1) are collapsible rows inside it.
   function renderGroup(group: GridGroup, depth: number): ReactNode {
     const open = !collapsed.has(group.key);
+    const section = depth === 0;
     const indent = { paddingLeft: `${depth * 1}rem` };
     const name = group.area?.name ?? "Unassigned";
     const color = group.area?.color ?? DEFAULT_AREA_COLOR;
+    const rowBg = section ? "bg-gray-50" : "bg-white";
 
     return (
       <Fragment key={group.key}>
-        <tr className="border-t border-gray-200">
+        <tr
+          className={
+            section ? "border-y border-gray-300 bg-gray-50" : "border-t border-gray-200"
+          }
+        >
           <th
             scope="row"
-            className="sticky left-0 bg-white py-1.5 pr-3 text-left font-normal"
+            className={`sticky left-0 ${rowBg} ${section ? "py-2" : "py-1.5"} pr-3 text-left font-normal`}
           >
             <div className="flex items-center gap-1.5" style={indent}>
               <button
@@ -104,7 +113,26 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
               >
                 {open ? "▾" : "▸"}
               </button>
-              {group.area ? (
+              {section ? (
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <span
+                    aria-hidden
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  {group.href ? (
+                    <Link
+                      href={group.href}
+                      aria-current={group.active ? "true" : undefined}
+                      className="hover:underline"
+                    >
+                      {name}
+                    </Link>
+                  ) : (
+                    name
+                  )}
+                </span>
+              ) : group.area ? (
                 <AreaChip
                   area={group.area}
                   href={group.href}
@@ -256,7 +284,16 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
               ))}
             </tr>
           </thead>
-          <tbody>{groups.map((group) => renderGroup(group, 0))}</tbody>
+          {groups.map((group, index) => (
+            <tbody key={group.key}>
+              {index > 0 && (
+                <tr aria-hidden>
+                  <td colSpan={columns} className="h-4" />
+                </tr>
+              )}
+              {renderGroup(group, 0)}
+            </tbody>
+          ))}
         </table>
       </div>
     </div>
