@@ -45,6 +45,8 @@ A task's optional parent: a todo belongs to at most one project, unlike categori
 
 Deleting a project keeps its todos; they just lose `project_id`.
 
+`convert_todo(todo, 'project' | 'category')` replaces a todo with a project or category of the same name (notes become the description), atomically. See [screens.md](screens.md#converting-an-inbox-task).
+
 ## `areas`
 
 The grouping for todos. The UI, routes (`/categories`, `/categories/[id]`), and URL params (`?category=`) say **category**; the code and schema still say "area" (`areas`, `AreaChip`, `area_id`).

@@ -214,3 +214,37 @@ export async function deleteTodo(id: string): Promise<TodoActionState> {
   revalidatePath("/", "layout");
   return {};
 }
+
+export type ConvertKind = "project" | "category";
+
+// Replaces the todo with a project or category of the same name, using its
+// notes as the description. The todo is deleted only if that succeeds.
+export async function convertTodo(
+  id: string,
+  kind: ConvertKind,
+): Promise<TodoActionState> {
+  await getCurrentUser();
+  if (kind !== "project" && kind !== "category") {
+    return { error: "Choose a project or category." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("convert_todo", {
+    p_todo_id: id,
+    p_kind: kind,
+  });
+  if (error) {
+    switch (error.code) {
+      case "23505":
+        return { error: `You already have a ${kind} with this name.` };
+      case "23514":
+        return {
+          error: `A ${kind} name can be at most 100 characters. Shorten the title first.`,
+        };
+      default:
+        return { error: `Couldn't convert it to a ${kind}. Try again.` };
+    }
+  }
+
+  revalidatePath("/", "layout");
+  return {};
+}

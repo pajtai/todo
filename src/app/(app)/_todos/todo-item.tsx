@@ -8,10 +8,12 @@ import { describeRecurrence } from "@/lib/habits";
 import { AreaChip } from "../area-chip";
 import { RecurrenceFields } from "../recurrence-fields";
 import {
+  convertTodo,
   deleteTodo,
   setTodoCompleted,
   setTodoStarred,
   updateTodo,
+  type ConvertKind,
   type TodoActionState,
 } from "./actions";
 
@@ -45,6 +47,8 @@ type TodoItemProps = {
   today?: string;
   /** Hide the project link, e.g. inside that project's own list. */
   hideProject?: boolean;
+  /** Offer "Convert to project / category", as the inbox does. */
+  convertible?: boolean;
 };
 
 export function TodoItem({
@@ -53,6 +57,7 @@ export function TodoItem({
   projectOptions,
   today,
   hideProject,
+  convertible,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const repeats = activeSeries(todo);
@@ -79,6 +84,20 @@ export function TodoItem({
     startTransition(async () => {
       setOptimisticStarred(next);
       const result = await setTodoStarred(todo.id, next);
+      setError(result.error);
+    });
+  }
+
+  function convert(kind: ConvertKind) {
+    const confirmed = window.confirm(
+      `Turn "${todo.title}" into a ${kind}? The task is removed; its notes become the description.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+    setError(undefined);
+    startTransition(async () => {
+      const result = await convertTodo(todo.id, kind);
       setError(result.error);
     });
   }
@@ -165,6 +184,25 @@ export function TodoItem({
         >
           {starred ? "★" : "☆"}
         </button>
+        {convertible && (
+          <select
+            value=""
+            onChange={(event) => {
+              const kind = event.target.value;
+              if (kind === "project" || kind === "category") {
+                convert(kind);
+              }
+            }}
+            aria-label={`Convert "${todo.title}"`}
+            className="rounded border border-gray-300 px-1 py-0.5 text-sm text-gray-600"
+          >
+            <option value="" disabled>
+              Convert to…
+            </option>
+            <option value="project">Project</option>
+            <option value="category">Category</option>
+          </select>
+        )}
         <button
           type="button"
           onClick={remove}

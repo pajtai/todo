@@ -40,7 +40,13 @@ async function Inbox() {
       ) : (
         <ul className="divide-y divide-gray-200">
           {inbox.data.map((todo) => (
-            <TodoItem key={todo.id} todo={todo} {...options} today={today} />
+            <TodoItem
+              key={todo.id}
+              todo={todo}
+              {...options}
+              today={today}
+              convertible
+            />
           ))}
         </ul>
       )}
@@ -55,7 +61,7 @@ export default function CapturePage() {
       <QuickAdd />
       <p className="-mt-4 text-sm text-gray-500">
         New tasks land in the inbox. Open one to give it a project, category,
-        or due date.
+        or due date, or use Convert to turn it into a project or category.
       </p>
       <Suspense fallback={<p className="text-gray-500">Loading…</p>}>
         <Inbox />
