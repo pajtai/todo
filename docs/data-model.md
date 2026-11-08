@@ -51,7 +51,7 @@ The grouping for todos. The UI, routes (`/categories`, `/categories/[id]`), and 
 
 Old links keep working: `next.config.ts` redirects `/areas` and `/areas/:id` to `/categories`, and `/review` still accepts the old `?area=` param. `/todos` redirects to `/do` (see [screens.md](screens.md)).
 
-Every category is user-defined and works the same way. To group them (say, under "Projects" or "Habits"), nest them with `parent_id`, one level deep: a category can have a parent, but not a grandparent. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
+Every category is user-defined, works the same way, and is flat: categories don't nest. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
 
 Until November 2026 areas had a predefined type (project, goal, habit, domain, other) and the UI called them Intentions. Migration `*_categories.sql` dropped types from the app; existing areas kept their names, colors, parents, and todos.
 
@@ -60,28 +60,20 @@ Until November 2026 areas had a predefined type (project, goal, habit, domain, o
 | `id`, `user_id` | Standard |
 | `name` | Required, 1–100 characters. Unique per user, ignoring case |
 | `type` | **Deprecated** `area_type` enum, default `other`, no longer read or written. Kept until the old deployed code is gone; a later migration should drop it and the enum |
-| `parent_id` | Optional parent area. Any type can sit under any type |
+| `parent_id` | **Deprecated**, always null (check constraint `areas_no_parent`). Kept until the old deployed code is gone |
 | `color` | Optional `#rrggbb` |
 | `description` | Optional |
 | `archived_at` | Null means active |
 | `recurrence`, `recurrence_days`, `habit_title`, `starts_on` | **Deprecated** habit rule, always null. See below |
 | `created_at`, `updated_at` | `updated_at` is maintained by a trigger |
 
-### Hierarchy rules
+### No nesting
 
-The `check_area_parent()` trigger enforces these, and `src/app/(app)/categories/actions.ts` turns the error codes into messages:
-
-- A category can't be its own parent (`TD001`).
-- A parent must exist and belong to the same user (`TD002`).
-- A parent must be top-level: categories nest one level deep (`TD003`).
-- A category with subcategories, archived ones included, can't get a parent (`TD004`). The edit form says so instead of offering a Parent picker, and only lists top-level categories as parents.
-- Deleting a parent keeps its children, which become top-level.
-
-Migration `*_single_level_categories.sql` added `TD003` and `TD004` and moved any deeper category onto its top-level ancestor.
+Categories used to nest one level deep (`parent_id`, enforced by the `check_area_parent()` trigger). Migration `*_flat_categories.sql` made every subcategory top-level, keeping its todos, added `areas_no_parent`, and dropped the trigger. To group tasks under something bigger, use a project.
 
 ### Archiving and deleting
 
-- **Archiving** hides a category from filters, new-todo pickers, and parent pickers, but it stays on existing todos and appears under "Archived" on `/categories`. Edit forms keep listing archived areas already attached to that todo or area, because saving would otherwise silently detach them.
+- **Archiving** hides a category from filters and new-todo pickers, but it stays on existing todos and appears under "Archived" on `/categories`. Edit forms keep listing archived areas already attached to that todo or area, because saving would otherwise silently detach them.
 - **Deleting** removes the area and its links. The todos stay.
 
 ## `todo_areas`
@@ -90,14 +82,12 @@ Many-to-many link between todos and areas. Its insert policy also requires that 
 
 ## `area_paths` view
 
-Each area paired with itself (depth 0) and its ancestors (depth 1; nesting is one level deep, but the view would handle more). It's `security_invoker`, so RLS applies. The Review view uses it to roll completions up the hierarchy.
+Each area paired with itself (depth 0) and its ancestors (depth 1+). Since categories no longer nest, every area now has only its depth-0 row; the view, `review_completed`, and the Review roll-up code still handle ancestors. It's `security_invoker`, so RLS applies.
 
 | `area_id` | `ancestor_id` | `depth` |
 | --- | --- | --- |
 | Marathon training | Marathon training | 0 |
-| Marathon training | Get fit | 1 |
 
-Category pages and the Plan screen show only todos attached directly to that area, not those on its descendants. Use `area_paths` when you need roll-up.
 
 ## Embedding areas in todo queries
 
@@ -121,7 +111,7 @@ Returns the caller's completed todos for a local date range with their areas and
 
 There's no seed file, because a seed would land in the one hosted database and users can't be created safely from SQL. To get data for trying the app or the Review view, create these on `/categories`, `/capture`, and `/plan`:
 
-1. Categories "Get fit", "Marathon training" with parent "Get fit", and "Stretch".
+1. Categories "Marathon training" and "Stretch", and a project "Kitchen remodel".
 2. Todo "Run 5k", attached to "Marathon training" and "Stretch". Edit it and set it to repeat daily to see a streak on those categories' pages.
 
 To test past completions, backdate `completed_at` on one of your todos in Studio.

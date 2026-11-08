@@ -5,7 +5,6 @@ import { isUuid } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadTodoOptions, selectTodos } from "@/lib/todos";
-import { AreaChip } from "../../area-chip";
 import { TodoItem } from "../../_todos/todo-item";
 import { RepeatingStats } from "./repeating-stats";
 
@@ -25,7 +24,7 @@ async function AreaDetail({
   const supabase = await createClient();
   const { data: area } = await supabase
     .from("areas")
-    .select("id, name, description, archived_at, parent_id")
+    .select("id, name, description, archived_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -33,20 +32,7 @@ async function AreaDetail({
     notFound();
   }
 
-  const [parent, children, open, completed, options] = await Promise.all([
-    area.parent_id
-      ? supabase
-          .from("areas")
-          .select("id, name, color")
-          .eq("id", area.parent_id)
-          .maybeSingle()
-      : null,
-    supabase
-      .from("areas")
-      .select("id, name, color")
-      .eq("parent_id", id)
-      .is("archived_at", null)
-      .order("name"),
+  const [open, completed, options] = await Promise.all([
     selectTodos(supabase, id)
       .is("completed_at", null)
       .order("starred", { ascending: false })
@@ -82,25 +68,12 @@ async function AreaDetail({
           href={`/review?category=${area.id}`}
           className="text-sm underline"
         >
-          Review completed todos, including subcategories
+          Review completed todos
         </Link>
         {area.description && (
           <p className="whitespace-pre-wrap">{area.description}</p>
         )}
       </div>
-      {parent?.data && (
-        <div className="flex items-center gap-2 text-sm">
-          Part of <AreaChip area={parent.data} />
-        </div>
-      )}
-      {children.data && children.data.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          Includes
-          {children.data.map((child) => (
-            <AreaChip key={child.id} area={child} />
-          ))}
-        </div>
-      )}
       <RepeatingStats supabase={supabase} areaId={area.id} />
       <section className="flex flex-col gap-1">
         <h2 className="font-medium">Open ({open.data.length})</h2>

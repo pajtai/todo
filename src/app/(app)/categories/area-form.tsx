@@ -1,24 +1,18 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
-import type { AreaOption } from "@/lib/areas";
 import type { AreaActionResult } from "./actions";
 
 const DEFAULT_COLOR = "#6b7280";
 
 export type AreaFormValues = {
   name: string;
-  parent_id: string | null;
   color: string | null;
   description: string | null;
 };
 
 type AreaFormProps = {
   action: (formData: FormData) => Promise<AreaActionResult>;
-  /** Top-level categories this one can be placed under. */
-  parents: AreaOption[];
-  /** A category with subcategories stays top-level. */
-  hasChildren?: boolean;
   area?: AreaFormValues;
   submitLabel: string;
   onDone?: () => void;
@@ -26,8 +20,6 @@ type AreaFormProps = {
 
 export function AreaForm({
   action,
-  parents,
-  hasChildren,
   area,
   submitLabel,
   onDone,
@@ -64,31 +56,6 @@ export function AreaForm({
         />
       </label>
       <div className="flex flex-wrap gap-3">
-        {hasChildren ? (
-          <div className="flex flex-1 flex-col gap-1 text-sm">
-            Parent
-            <input type="hidden" name="parent_id" value="" />
-            <p className="py-2 text-gray-500">
-              None. It has subcategories, so it stays at the top level.
-            </p>
-          </div>
-        ) : (
-          <label className="flex flex-1 flex-col gap-1 text-sm">
-            Parent
-            <select
-              name="parent_id"
-              defaultValue={area?.parent_id ?? ""}
-              className={inputClass}
-            >
-              <option value="">None</option>
-              {parents.map((parent) => (
-                <option key={parent.id} value={parent.id}>
-                  {parent.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         <label className="flex flex-col gap-1 text-sm">
           Color
           <input

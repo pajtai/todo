@@ -2,31 +2,18 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import type { AreaOption } from "@/lib/areas";
 import { deleteArea, setAreaArchived, updateArea } from "./actions";
 import { AreaForm, type AreaFormValues } from "./area-form";
 
 type AreaRowProps = {
   area: AreaFormValues & { id: string; archived_at: string | null };
-  /** Nesting level in the list; each level is indented. */
-  depth?: number;
-  parentName?: string;
-  parents: AreaOption[];
-  hasChildren?: boolean;
 };
 
-export function AreaRow({
-  area,
-  depth = 0,
-  parentName,
-  parents,
-  hasChildren,
-}: AreaRowProps) {
+export function AreaRow({ area }: AreaRowProps) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
   const archived = area.archived_at !== null;
-  const indent = { paddingLeft: `${depth * 1.5}rem` };
 
   function toggleArchived() {
     startTransition(async () => {
@@ -37,7 +24,7 @@ export function AreaRow({
 
   function remove() {
     const confirmed = window.confirm(
-      `Delete "${area.name}"? Its todos stay, but lose this category. Subcategories move to the top level.`,
+      `Delete "${area.name}"? Its todos stay, but lose this category.`,
     );
     if (!confirmed) {
       return;
@@ -50,12 +37,10 @@ export function AreaRow({
 
   if (editing) {
     return (
-      <li className="py-3" style={indent}>
+      <li className="py-3">
         <AreaForm
           action={(formData) => updateArea(area.id, formData)}
           area={area}
-          parents={parents}
-          hasChildren={hasChildren}
           submitLabel="Save"
           onDone={() => setEditing(false)}
         />
@@ -64,21 +49,19 @@ export function AreaRow({
   }
 
   return (
-    <li className="flex flex-col gap-1 py-2" style={indent}>
+    <li className="flex flex-col gap-1 py-2">
       <div className="flex items-center gap-3">
         <span
           aria-hidden
           className="size-3 shrink-0 rounded-full"
           style={{ backgroundColor: area.color ?? undefined }}
         />
-        <div className="flex flex-1 flex-col">
-          <Link href={`/categories/${area.id}`} className="hover:underline">
-            {area.name}
-          </Link>
-          {parentName && (
-            <span className="text-sm text-gray-500">Part of {parentName}</span>
-          )}
-        </div>
+        <Link
+          href={`/categories/${area.id}`}
+          className="flex-1 hover:underline"
+        >
+          {area.name}
+        </Link>
         <div className="flex gap-3 text-sm text-gray-500 underline">
           <button
             type="button"

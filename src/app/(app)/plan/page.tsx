@@ -49,7 +49,7 @@ async function PlanSections() {
       .order("name"),
     supabase
       .from("areas")
-      .select("id, name, color, parent_id")
+      .select("id, name, color")
       .is("archived_at", null)
       .order("name"),
     loadTodoOptions(supabase),
@@ -81,29 +81,15 @@ async function PlanSections() {
   const archivedProjects = projects.data.filter((p) => p.archived_at !== null);
 
   // Categories: tasks outside a project, under each category they're in.
-  // Top-level categories are sections; subcategories are groups inside.
   const unprojected = todos.filter((todo) => todo.project_id === null);
-  const inArea = (areaId: string) =>
-    unprojected.filter((todo) => todo.areas.some((a) => a.id === areaId));
-  const activeAreaIds = new Set(areas.data.map((area) => area.id));
-  const topLevel = areas.data.filter(
-    (area) => !area.parent_id || !activeAreaIds.has(area.parent_id),
-  );
-  const childrenOf = Map.groupBy(
-    areas.data.filter(
-      (area) => area.parent_id && activeAreaIds.has(area.parent_id),
-    ),
-    (area) => area.parent_id!,
-  );
-  const categorySections = topLevel
+  const categorySections = areas.data
     .map((area) => ({
       area,
-      own: inArea(area.id),
-      children: (childrenOf.get(area.id) ?? [])
-        .map((child) => ({ area: child, todos: inArea(child.id) }))
-        .filter((child) => child.todos.length > 0),
+      todos: unprojected.filter((todo) =>
+        todo.areas.some((a) => a.id === area.id),
+      ),
     }))
-    .filter((section) => section.own.length > 0 || section.children.length > 0);
+    .filter((section) => section.todos.length > 0);
 
   return (
     <>
@@ -180,7 +166,7 @@ async function PlanSections() {
             No open tasks outside a project have a category.
           </p>
         )}
-        {categorySections.map(({ area, own, children }) => (
+        {categorySections.map(({ area, todos }) => (
           <div
             key={area.id}
             className="flex flex-col gap-2 rounded border border-gray-200 p-3"
@@ -188,15 +174,7 @@ async function PlanSections() {
             <div>
               <AreaChip area={area} />
             </div>
-            {own.length > 0 && <TodoList todos={own} {...list} />}
-            {children.map((child) => (
-              <div key={child.area.id} className="ml-4 flex flex-col gap-1">
-                <div>
-                  <AreaChip area={child.area} />
-                </div>
-                <TodoList todos={child.todos} {...list} />
-              </div>
-            ))}
+            <TodoList todos={todos} {...list} />
           </div>
         ))}
       </section>

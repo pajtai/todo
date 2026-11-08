@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isUuid } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,7 +9,6 @@ export type AreaActionResult = { error?: string };
 const MAX_NAME_LENGTH = 100;
 
 function parseArea(formData: FormData) {
-  const parentId = String(formData.get("parent_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
 
   if (!name) {
@@ -19,14 +17,10 @@ function parseArea(formData: FormData) {
   if (name.length > MAX_NAME_LENGTH) {
     return { error: `Keep the name under ${MAX_NAME_LENGTH} characters.` };
   }
-  if (parentId && !isUuid(parentId)) {
-    return { error: "Choose a valid parent." };
-  }
 
   return {
     values: {
       name,
-      parent_id: parentId || null,
       color: String(formData.get("color") ?? "") || null,
       description: String(formData.get("description") ?? "").trim() || null,
     },
@@ -34,20 +28,9 @@ function parseArea(formData: FormData) {
 }
 
 function errorMessage(code: string) {
-  switch (code) {
-    case "23505":
-      return "You already have a category with this name.";
-    case "TD001":
-      return "A category can't be its own parent.";
-    case "TD002":
-      return "That parent no longer exists.";
-    case "TD003":
-      return "That parent is a subcategory. Choose a top-level category.";
-    case "TD004":
-      return "This category has subcategories, so it can't have a parent.";
-    default:
-      return "Couldn't save. Try again.";
-  }
+  return code === "23505"
+    ? "You already have a category with this name."
+    : "Couldn't save. Try again.";
 }
 
 export async function createArea(formData: FormData): Promise<AreaActionResult> {
