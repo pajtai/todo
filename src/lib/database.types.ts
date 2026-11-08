@@ -294,6 +294,10 @@ export type Database = {
       }
     }
     Functions: {
+      convert_todo: {
+        Args: { p_kind: string; p_todo_id: string }
+        Returns: string
+      }
       ensure_habit_todos: { Args: { p_on?: string }; Returns: number }
       habit_occurrences: {
         Args: { p_from: string; p_to: string }
