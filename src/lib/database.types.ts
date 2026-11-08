@@ -119,6 +119,36 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       todo_areas: {
         Row: {
           area_id: string
@@ -191,6 +221,7 @@ export type Database = {
           id: string
           notes: string | null
           occurrence_date: string | null
+          project_id: string | null
           series_id: string | null
           starred: boolean
           title: string
@@ -205,6 +236,7 @@ export type Database = {
           id?: string
           notes?: string | null
           occurrence_date?: string | null
+          project_id?: string | null
           series_id?: string | null
           starred?: boolean
           title: string
@@ -219,6 +251,7 @@ export type Database = {
           id?: string
           notes?: string | null
           occurrence_date?: string | null
+          project_id?: string | null
           series_id?: string | null
           starred?: boolean
           title?: string
@@ -232,6 +265,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "areas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "todos_project_id_fkey"
+            columns: ["project_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "user_id"]
           },
           {
             foreignKeyName: "todos_series_id_fkey"
