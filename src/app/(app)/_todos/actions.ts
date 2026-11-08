@@ -103,7 +103,15 @@ export async function updateTodo(
     notes: String(formData.get("notes") ?? "").trim() || null,
     due_on: String(formData.get("due_on") ?? "") || null,
   };
-  // Only the review's edit form sends this field; /todos leaves it alone.
+  // Forms without a Project field leave the project alone.
+  const projectId = formData.get("project_id");
+  if (projectId !== null) {
+    if (projectId !== "" && !isUuid(projectId)) {
+      return { error: "Choose a valid project." };
+    }
+    changes.project_id = String(projectId) || null;
+  }
+  // Only the review's edit form sends this field; other forms leave it alone.
   const completedAt = formData.get("completed_at");
   if (completedAt !== null) {
     const instant = await parseCompletedAt(supabase, user.id, String(completedAt));
@@ -118,7 +126,13 @@ export async function updateTodo(
 
   const { error } = await supabase.from("todos").update(changes).eq("id", id);
   if (error) {
-    return { error: "Couldn't save your changes. Try again." };
+    // 23503: the project was deleted meanwhile (or isn't the user's).
+    return {
+      error:
+        error.code === "23503"
+          ? "That project no longer exists."
+          : "Couldn't save your changes. Try again.",
+    };
   }
 
   // Starts, changes, or stops the repeat. A null start keeps the current one

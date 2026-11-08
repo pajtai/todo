@@ -5,7 +5,7 @@ import { Fragment, useState, type ReactNode } from "react";
 import type { AreaOption } from "@/lib/areas";
 import type { AreaInfo } from "@/lib/review";
 import { AreaChip } from "../area-chip";
-import { EditForm, type Todo } from "../todos/todo-item";
+import { EditForm, type Todo } from "../_todos/todo-item";
 
 export type GridDay = {
   date: string;

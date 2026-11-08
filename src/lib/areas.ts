@@ -10,3 +10,6 @@ export function isUuid(value: unknown): value is string {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
   );
 }
+
+/** A todo's project: its optional single parent. */
+export type ProjectOption = Pick<Tables<"projects">, "id" | "name">;

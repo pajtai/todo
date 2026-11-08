@@ -4,9 +4,9 @@ import { Suspense } from "react";
 import { isUuid } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { selectActiveAreas, selectTodos } from "@/lib/todos";
+import { loadTodoOptions, selectTodos } from "@/lib/todos";
 import { AreaChip } from "../../area-chip";
-import { TodoItem } from "../../todos/todo-item";
+import { TodoItem } from "../../_todos/todo-item";
 import { RepeatingStats } from "./repeating-stats";
 
 const COMPLETED_LIMIT = 50;
@@ -56,7 +56,7 @@ async function AreaDetail({
       .not("completed_at", "is", null)
       .order("completed_at", { ascending: false })
       .limit(COMPLETED_LIMIT),
-    selectActiveAreas(supabase),
+    loadTodoOptions(supabase),
   ]);
 
   if (open.error || completed.error) {
@@ -67,7 +67,6 @@ async function AreaDetail({
     );
   }
 
-  const areaOptions = options.data ?? [];
 
   return (
     <>
@@ -107,7 +106,7 @@ async function AreaDetail({
         <h2 className="font-medium">Open ({open.data.length})</h2>
         <ul className="divide-y divide-gray-200">
           {open.data.map((todo) => (
-            <TodoItem key={todo.id} todo={todo} areaOptions={areaOptions} />
+            <TodoItem key={todo.id} todo={todo} {...options} />
           ))}
         </ul>
       </section>
@@ -115,7 +114,7 @@ async function AreaDetail({
         <h2 className="font-medium">Completed ({completed.data.length})</h2>
         <ul className="divide-y divide-gray-200">
           {completed.data.map((todo) => (
-            <TodoItem key={todo.id} todo={todo} areaOptions={areaOptions} />
+            <TodoItem key={todo.id} todo={todo} {...options} />
           ))}
         </ul>
       </section>

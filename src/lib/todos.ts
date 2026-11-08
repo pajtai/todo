@@ -9,7 +9,7 @@ export function selectTodos(supabase: Client, areaId?: string) {
   const query = supabase
     .from("todos")
     .select(
-      "id, title, notes, due_on, completed_at, starred, created_at, areas!todo_areas(id, name, color), membership:todo_areas(area_id), series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
+      "id, title, notes, due_on, completed_at, starred, created_at, project_id, occurrence_date, project:projects(id, name), areas!todo_areas(id, name, color), membership:todo_areas(area_id), series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
     );
   return areaId
     ? query.eq("membership.area_id", areaId).not("membership", "is", null)
@@ -22,4 +22,39 @@ export function selectActiveAreas(supabase: Client) {
     .select("id, name, color")
     .is("archived_at", null)
     .order("name");
+}
+
+export function selectActiveProjects(supabase: Client) {
+  return supabase
+    .from("projects")
+    .select("id, name")
+    .is("archived_at", null)
+    .order("name");
+}
+
+// What a todo's edit form can pick from: active categories and projects.
+export async function loadTodoOptions(supabase: Client) {
+  const [areas, projects] = await Promise.all([
+    selectActiveAreas(supabase),
+    selectActiveProjects(supabase),
+  ]);
+  return {
+    areaOptions: areas.data ?? [],
+    projectOptions: projects.data ?? [],
+  };
+}
+
+// The user's local date (YYYY-MM-DD) in their profile timezone.
+export async function loadToday(supabase: Client, userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("id", userId)
+    .single();
+  const timeZone = data?.timezone ?? "UTC";
+  return { timeZone, today: localDate(new Date(), timeZone) };
+}
+
+export function localDate(date: Date, timeZone: string) {
+  return date.toLocaleDateString("en-CA", { timeZone });
 }

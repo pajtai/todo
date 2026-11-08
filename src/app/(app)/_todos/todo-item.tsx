@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
-import type { AreaOption } from "@/lib/areas";
+import Link from "next/link";
+import type { AreaOption, ProjectOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
 import { describeRecurrence } from "@/lib/habits";
 import { AreaChip } from "../area-chip";
@@ -31,15 +32,28 @@ export type Todo = Pick<
 > & {
   areas: AreaOption[];
   created_at?: string;
+  project?: ProjectOption | null;
   series?: TodoSeries | null;
 };
 
 type TodoItemProps = {
   todo: Todo;
   areaOptions: AreaOption[];
+  /** Omitted, the edit form has no Project field and leaves it unchanged. */
+  projectOptions?: ProjectOption[];
+  /** The local date, YYYY-MM-DD. Set, past due dates show as overdue. */
+  today?: string;
+  /** Hide the project link, e.g. inside that project's own list. */
+  hideProject?: boolean;
 };
 
-export function TodoItem({ todo, areaOptions }: TodoItemProps) {
+export function TodoItem({
+  todo,
+  areaOptions,
+  projectOptions,
+  today,
+  hideProject,
+}: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const repeats = activeSeries(todo);
   const [error, setError] = useState<string>();
@@ -83,11 +97,16 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
         <EditForm
           todo={todo}
           areaOptions={areaOptions}
+          projectOptions={projectOptions}
           onDone={() => setEditing(false)}
         />
       </li>
     );
   }
+
+  const overdue =
+    !completed && today !== undefined && todo.due_on !== null && todo.due_on < today;
+  const project = hideProject ? null : todo.project;
 
   return (
     <li className="flex flex-col gap-1 py-2">
@@ -121,7 +140,11 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
             </span>
           )}
           {todo.due_on && (
-            <span className="text-sm text-gray-500">Due {todo.due_on}</span>
+            <span
+              className={`text-sm ${overdue ? "text-red-600" : "text-gray-500"}`}
+            >
+              {overdue ? "Overdue, due" : "Due"} {todo.due_on}
+            </span>
           )}
         </button>
         <button
@@ -151,8 +174,17 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
           Delete
         </button>
       </div>
-      {todo.areas.length > 0 && (
+      {(project || todo.areas.length > 0) && (
         <div className="ml-7 flex flex-wrap gap-1.5">
+          {project && (
+            <Link
+              href={`/plan#project-${project.id}`}
+              className="inline-flex items-center rounded border border-gray-300 px-2 py-0.5 text-xs"
+            >
+              <span className="sr-only">Project: </span>
+              {project.name}
+            </Link>
+          )}
           {todo.areas.map((area) => (
             <AreaChip key={area.id} area={area} />
           ))}
@@ -176,6 +208,7 @@ type EditFormProps = TodoItemProps & {
 export function EditForm({
   todo,
   areaOptions,
+  projectOptions,
   onDone,
   completedAt,
 }: EditFormProps) {
@@ -186,6 +219,13 @@ export function EditForm({
     ...areaOptions,
     ...todo.areas.filter((area) => !activeIds.has(area.id)),
   ];
+  // Same for an archived project already on the todo.
+  const pickableProjects =
+    projectOptions &&
+    todo.project &&
+    !projectOptions.some((project) => project.id === todo.project!.id)
+      ? [...projectOptions, todo.project]
+      : projectOptions;
   const attachedIds = new Set(todo.areas.map((area) => area.id));
   const inputClass = "rounded border border-gray-300 px-3 py-2 text-black";
   const [state, formAction, pending] = useActionState(
@@ -253,6 +293,23 @@ export function EditForm({
             defaultValue={completedAt}
             className={inputClass}
           />
+        </label>
+      )}
+      {pickableProjects && (
+        <label className="flex flex-col gap-1 text-sm">
+          Project
+          <select
+            name="project_id"
+            defaultValue={todo.project?.id ?? ""}
+            className={inputClass}
+          >
+            <option value="">None</option>
+            {pickableProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </label>
       )}
       {pickable.length > 0 && (

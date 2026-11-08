@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import type { AreaOption } from "@/lib/areas";
-import { EditForm, type Todo } from "../todos/todo-item";
+import { EditForm, type Todo } from "../_todos/todo-item";
 
 type ReviewTodoItemProps = {
   todo: Todo;
