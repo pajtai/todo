@@ -192,6 +192,7 @@ export type Database = {
           notes: string | null
           occurrence_date: string | null
           series_id: string | null
+          starred: boolean
           title: string
           updated_at: string
           user_id: string
@@ -205,6 +206,7 @@ export type Database = {
           notes?: string | null
           occurrence_date?: string | null
           series_id?: string | null
+          starred?: boolean
           title: string
           updated_at?: string
           user_id?: string
@@ -218,6 +220,7 @@ export type Database = {
           notes?: string | null
           occurrence_date?: string | null
           series_id?: string | null
+          starred?: boolean
           title?: string
           updated_at?: string
           user_id?: string
@@ -322,6 +325,10 @@ export type Database = {
           p_starts_on: string
           p_todo_id: string
         }
+        Returns: undefined
+      }
+      set_todo_starred: {
+        Args: { p_starred: boolean; p_todo_id: string }
         Returns: undefined
       }
       user_today: { Args: never; Returns: string }

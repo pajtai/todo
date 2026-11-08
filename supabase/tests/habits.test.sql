@@ -90,6 +90,29 @@ begin
   end if;
   update public.todos set completed_at = now() where series_id = run_series;
 
+  -- Starring one todo of a series stars every todo in it, and new
+  -- occurrences copy the star. Other todos are left alone.
+  perform public.set_todo_starred('00000000-0000-4000-8000-0000000000d1', true);
+  if exists (select 1 from public.todos where series_id = run_series and not starred) then
+    raise exception 'starring did not star the whole series';
+  end if;
+  if (select starred from public.todos where id = '00000000-0000-4000-8000-0000000000d2') then
+    raise exception 'starring touched another series';
+  end if;
+  perform public.ensure_habit_todos(today + 3);
+  if not (select starred from public.todos where series_id = run_series and occurrence_date = today + 3) then
+    raise exception 'new occurrence did not copy the star';
+  end if;
+  perform public.set_todo_starred(latest.id, false);
+  if exists (select 1 from public.todos where series_id = run_series and starred) then
+    raise exception 'unstarring did not unstar the whole series';
+  end if;
+  perform public.set_todo_starred('00000000-0000-4000-8000-0000000000d3', true);
+  if not (select starred from public.todos where id = '00000000-0000-4000-8000-0000000000d3') then
+    raise exception 'starring a one-off todo failed';
+  end if;
+  update public.todos set completed_at = now() where series_id = run_series;
+
   -- Weekly: only on its weekday.
   select occurrence_date into monday from public.todos where id = '00000000-0000-4000-8000-0000000000d2';
   update public.todos set completed_at = now() where id = '00000000-0000-4000-8000-0000000000d2';
@@ -176,6 +199,11 @@ begin
   begin
     perform public.set_todo_recurrence('00000000-0000-4000-8000-0000000000d3', 'daily', null, null);
     raise exception 'user B changed user A''s todo';
+  exception when no_data_found then null;
+  end;
+  begin
+    perform public.set_todo_starred('00000000-0000-4000-8000-0000000000d1', false);
+    raise exception 'user B starred user A''s todo';
   exception when no_data_found then null;
   end;
 end;
