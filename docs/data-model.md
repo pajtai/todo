@@ -23,6 +23,7 @@ One row per user, created by the `on_auth_user_created` trigger on `auth.users`.
 | `notes` | Optional |
 | `due_on` | Optional date, with no time or timezone |
 | `completed_at` | Null means open. A timestamp, not a boolean, because the Review view needs to know when a todo was done |
+| `project_id` | Optional parent project. A composite foreign key on `(project_id, user_id)` keeps it the same user's project; deleting the project sets it to null. New occurrences of a repeating todo copy it |
 | `starred` | Default false. On a repeating todo the star belongs to the whole series: `set_todo_starred(todo, starred)` updates every todo in it, and new occurrences copy it. Open lists show starred todos first |
 | `series_id`, `occurrence_date` | Set on repeating todos: the `todo_series` row with the rule, and the day this todo is for. Unique per user, series, and date. See [habits.md](habits.md) |
 | `habit_area_id` | **Deprecated**, no longer written. Kept until the old deployed code is gone |
@@ -30,11 +31,25 @@ One row per user, created by the `on_auth_user_created` trigger on `auth.users`.
 
 Unchecking a todo clears `completed_at`, and checking it again records the new time.
 
+## `projects`
+
+A task's optional parent: a todo belongs to at most one project, unlike categories, which are many-to-many. Added by `*_projects.sql`. Owner-only RLS, like `todos`. Managed on `/plan`.
+
+| Column | Notes |
+| --- | --- |
+| `id`, `user_id` | Standard. `unique (id, user_id)` is the target of the todos foreign key |
+| `name` | Required, 1–100 characters. Unique per user, ignoring case |
+| `description` | Optional |
+| `archived_at` | Null means active. Archived projects leave the edit form's Project picker (unless already on that todo) and move to "Archived projects" on `/plan` |
+| `created_at`, `updated_at` | `updated_at` is maintained by a trigger |
+
+Deleting a project keeps its todos; they just lose `project_id`.
+
 ## `areas`
 
 The grouping for todos. The UI, routes (`/categories`, `/categories/[id]`), and URL params (`?category=`) say **category**; the code and schema still say "area" (`areas`, `AreaChip`, `area_id`).
 
-Old links keep working: `next.config.ts` redirects `/areas` and `/areas/:id` to `/categories`, and `/todos` and `/review` still accept the old `?area=` param.
+Old links keep working: `next.config.ts` redirects `/areas` and `/areas/:id` to `/categories`, and `/review` still accepts the old `?area=` param. `/todos` redirects to `/do` (see [screens.md](screens.md)).
 
 Every category is user-defined and works the same way. To group them (say, under "Projects" or "Habits"), nest them with `parent_id`, one level deep: a category can have a parent, but not a grandparent. Any category can hold repeating tasks and shows their streak (see [habits.md](habits.md)).
 
@@ -82,7 +97,7 @@ Each area paired with itself (depth 0) and its ancestors (depth 1; nesting is on
 | Marathon training | Marathon training | 0 |
 | Marathon training | Get fit | 1 |
 
-Category pages and the `?category=` filter on `/todos` show only todos attached directly to that area, not those on its descendants. Use `area_paths` when you need roll-up.
+Category pages and the Plan screen show only todos attached directly to that area, not those on its descendants. Use `area_paths` when you need roll-up.
 
 ## Embedding areas in todo queries
 
@@ -104,7 +119,7 @@ Returns the caller's completed todos for a local date range with their areas and
 
 ## Sample data
 
-There's no seed file, because a seed would land in the one hosted database and users can't be created safely from SQL. To get data for trying the app or the Review view, create these on `/categories` and `/todos`:
+There's no seed file, because a seed would land in the one hosted database and users can't be created safely from SQL. To get data for trying the app or the Review view, create these on `/categories`, `/capture`, and `/plan`:
 
 1. Categories "Get fit", "Marathon training" with parent "Get fit", and "Stretch".
 2. Todo "Run 5k", attached to "Marathon training" and "Stretch". Edit it and set it to repeat daily to see a streak on those categories' pages.

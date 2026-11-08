@@ -27,21 +27,24 @@ async function UserMenu() {
   );
 }
 
+const NAV = [
+  { href: "/do", label: "Do" },
+  { href: "/capture", label: "Capture" },
+  { href: "/plan", label: "Plan" },
+  { href: "/review", label: "Review" },
+];
+
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <header className="flex items-center justify-between border-b border-gray-200 px-6 py-3">
         <nav className="flex items-center gap-4">
           <span className="font-semibold">Todo</span>
-          <Link href="/todos" className="text-sm hover:underline">
-            Todos
-          </Link>
-          <Link href="/categories" className="text-sm hover:underline">
-            Categories
-          </Link>
-          <Link href="/review" className="text-sm hover:underline">
-            Review
-          </Link>
+          {NAV.map(({ href, label }) => (
+            <Link key={href} href={href} className="text-sm hover:underline">
+              {label}
+            </Link>
+          ))}
         </nav>
         <Suspense>
           <UserMenu />

@@ -26,7 +26,7 @@ export async function signIn(
     return { error: error.message, email };
   }
 
-  redirect("/todos");
+  redirect("/do");
 }
 
 export async function signUp(

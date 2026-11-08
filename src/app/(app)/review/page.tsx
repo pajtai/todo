@@ -29,7 +29,7 @@ import { formatRate, habitRate, type Occurrence } from "@/lib/habits";
 import { createClient } from "@/lib/supabase/server";
 import { toLocalInput } from "@/lib/zoned-time";
 import { AreaChip } from "../area-chip";
-import type { Todo } from "../todos/todo-item";
+import type { Todo } from "../_todos/todo-item";
 import { AreaSelect } from "./area-select";
 import {
   ReviewGrid,
@@ -335,7 +335,7 @@ async function Review({
   };
   const { period } = state;
 
-  // Same lazy generation as /todos, so today's repeating todos count as expected.
+  // Same lazy generation as /do, so today's repeating todos count as expected.
   await supabase.rpc("ensure_habit_todos");
   const [rows, areas, occurrences, details] = await Promise.all([
     supabase.rpc("review_completed", { p_from: period.from, p_to: period.to }),

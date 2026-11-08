@@ -23,6 +23,6 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(
-    new URL(error ? "/login?confirm=failed" : "/todos", origin),
+    new URL(error ? "/login?confirm=failed" : "/do", origin),
   );
 }

@@ -5,7 +5,7 @@ Email/password auth through Supabase Auth, using `@supabase/ssr` session cookies
 ## Flow
 
 1. **Sign up** (`/signup`): the `signUp` action calls Supabase with `emailRedirectTo` set to `<origin>/auth/confirm`. A trigger on `auth.users` creates the `profiles` row.
-2. **Confirm:** the emailed link goes through Supabase and lands on `/auth/confirm`, which exchanges the code for a session and redirects to `/todos`. Failures redirect to `/login?confirm=failed`. The code exchange needs a cookie set at sign-up, so a link opened in a different browser confirms the email but shows that notice; logging in then works.
+2. **Confirm:** the emailed link goes through Supabase and lands on `/auth/confirm`, which exchanges the code for a session and redirects to `/do`. Failures redirect to `/login?confirm=failed`. The code exchange needs a cookie set at sign-up, so a link opened in a different browser confirms the email but shows that notice; logging in then works.
 3. **Log in / out:** the `signIn` and `signOut` actions in `src/app/(auth)/actions.ts`.
 4. **Timezone:** when `profiles.timezone` is still the `UTC` default, `TimezoneSync` saves the browser's zone.
 

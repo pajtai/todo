@@ -45,7 +45,7 @@ export async function updateSession(request: NextRequest) {
     return redirectTo(request, response, "/login");
   }
   if (signedIn && isAuthPage) {
-    return redirectTo(request, response, "/todos");
+    return redirectTo(request, response, "/do");
   }
 
   return response;
