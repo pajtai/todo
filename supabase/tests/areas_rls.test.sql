@@ -13,14 +13,13 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-0000000
 insert into public.todos (id, title) values ('00000000-0000-4000-8000-0000000000b1', 'B''s todo');
 insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000b2', 'B''s goal');
 
--- User A's data: category "child" under category "root".
+-- User A's data: a todo in category "root".
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
 insert into public.todos (id, title) values ('00000000-0000-4000-8000-0000000000a1', 'A''s todo');
 insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000a2', 'root');
-insert into public.areas (id, name, parent_id) values
-  ('00000000-0000-4000-8000-0000000000a3', 'child', '00000000-0000-4000-8000-0000000000a2');
+insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000a3', 'other');
 insert into public.todo_areas (todo_id, area_id) values
-  ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a3');
+  ('00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-0000000000a2');
 
 do $$
 declare
@@ -57,52 +56,21 @@ begin
     when insufficient_privilege then null;
   end;
 
-  -- Hierarchy rules. Categories nest one level deep.
+  -- Categories don't nest.
   begin
     update public.areas set parent_id = '00000000-0000-4000-8000-0000000000a3'
     where id = '00000000-0000-4000-8000-0000000000a2';
-    raise exception 'cycle was accepted';
+    raise exception 'a category was given a parent';
   exception
-    when sqlstate 'TD003' then null;
+    when check_violation then null;
   end;
 
   begin
     insert into public.areas (name, parent_id)
-    values ('grandchild', '00000000-0000-4000-8000-0000000000a3');
-    raise exception 'a grandchild was accepted';
+    values ('child', '00000000-0000-4000-8000-0000000000a2');
+    raise exception 'a subcategory was created';
   exception
-    when sqlstate 'TD003' then null;
-  end;
-
-  insert into public.areas (id, name)
-  values ('00000000-0000-4000-8000-0000000000a6', 'other root');
-  begin
-    update public.areas set parent_id = '00000000-0000-4000-8000-0000000000a6'
-    where id = '00000000-0000-4000-8000-0000000000a2';
-    raise exception 'a category with subcategories was given a parent';
-  exception
-    when sqlstate 'TD004' then null;
-  end;
-
-  -- A top-level category without children can become a subcategory.
-  update public.areas set parent_id = '00000000-0000-4000-8000-0000000000a2'
-  where id = '00000000-0000-4000-8000-0000000000a6';
-  update public.areas set parent_id = null
-  where id = '00000000-0000-4000-8000-0000000000a6';
-
-  begin
-    update public.areas set parent_id = id where id = '00000000-0000-4000-8000-0000000000a2';
-    raise exception 'self-parent was accepted';
-  exception
-    when sqlstate 'TD001' then null;
-  end;
-
-  begin
-    update public.areas set parent_id = '00000000-0000-4000-8000-0000000000b2'
-    where id = '00000000-0000-4000-8000-0000000000a2';
-    raise exception 'another user''s area was accepted as a parent';
-  exception
-    when sqlstate 'TD002' then null;
+    when check_violation then null;
   end;
 
   begin
@@ -126,23 +94,17 @@ begin
   end if;
   insert into public.areas (name) values ('B''s goal');
 
-  -- area_paths.
-  if (select jsonb_agg(jsonb_build_object('ancestor', ancestor_id, 'depth', depth) order by depth)
-      from public.area_paths where area_id = '00000000-0000-4000-8000-0000000000a3')
+  -- area_paths: with no parents, each area is only its own path.
+  if (select jsonb_agg(jsonb_build_object('ancestor', ancestor_id, 'depth', depth))
+      from public.area_paths where area_id = '00000000-0000-4000-8000-0000000000a2')
      is distinct from jsonb_build_array(
-       jsonb_build_object('ancestor', '00000000-0000-4000-8000-0000000000a3'::uuid, 'depth', 0),
-       jsonb_build_object('ancestor', '00000000-0000-4000-8000-0000000000a2'::uuid, 'depth', 1)
+       jsonb_build_object('ancestor', '00000000-0000-4000-8000-0000000000a2'::uuid, 'depth', 0)
      ) then
-    raise exception 'area_paths should return self at depth 0 and parent at depth 1';
+    raise exception 'area_paths should return only self at depth 0';
   end if;
 
-  -- Deleting a parent keeps the child; deleting an area keeps its todos.
+  -- Deleting an area keeps its todos.
   delete from public.areas where id = '00000000-0000-4000-8000-0000000000a2';
-  if (select parent_id from public.areas where id = '00000000-0000-4000-8000-0000000000a3') is not null then
-    raise exception 'child should lose its parent, not be deleted';
-  end if;
-
-  delete from public.areas where id = '00000000-0000-4000-8000-0000000000a3';
   if exists (select 1 from public.todo_areas where todo_id = '00000000-0000-4000-8000-0000000000a1') then
     raise exception 'deleting an area should remove its links';
   end if;

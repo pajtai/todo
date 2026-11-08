@@ -18,13 +18,11 @@ insert into public.todos (id, title, completed_at) values
   ('00000000-0000-4000-8000-0000000000b1', 'B''s todo', '2026-10-15 19:00:00+00');
 
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}', true);
-insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000a2', 'root');
-insert into public.areas (id, name, parent_id) values
-  ('00000000-0000-4000-8000-0000000000a3', 'child', '00000000-0000-4000-8000-0000000000a2');
+insert into public.areas (id, name) values ('00000000-0000-4000-8000-0000000000a3', 'child');
 insert into public.todos (id, title, completed_at) values
   -- 23:30 on Oct 15 in Los Angeles, which is already Oct 16 in UTC.
   ('00000000-0000-4000-8000-0000000000a1', 'late', '2026-10-16 06:30:00+00'),
-  -- Noon on Oct 15 in Los Angeles, in "child" under "root".
+  -- Noon on Oct 15 in Los Angeles, in in "child".
   ('00000000-0000-4000-8000-0000000000a4', 'nested', '2026-10-15 19:00:00+00'),
   ('00000000-0000-4000-8000-0000000000a5', 'open', null);
 insert into public.todo_areas (todo_id, area_id) values
@@ -54,13 +52,11 @@ begin
     raise exception '23:30 local completion leaked into the UTC day';
   end if;
 
-  -- Roll-up: the attached area is depth 0 and its parent is depth 1.
+  -- The attached area, at depth 0. Categories don't nest, so nothing rolls up.
   select areas into nested_areas from public.review_completed('2026-10-15', '2026-10-15')
   where todo_id = '00000000-0000-4000-8000-0000000000a4';
-  if jsonb_array_length(nested_areas) <> 2
+  if jsonb_array_length(nested_areas) <> 1
     or nested_areas -> 0 ->> 'name' <> 'child' or (nested_areas -> 0 ->> 'depth')::int <> 0
-    or nested_areas -> 1 ->> 'name' <> 'root' or (nested_areas -> 1 ->> 'depth')::int <> 1
-    or nested_areas -> 0 ->> 'parent_id' <> '00000000-0000-4000-8000-0000000000a2'
   then
     raise exception 'unexpected areas for nested todo: %', nested_areas;
   end if;
