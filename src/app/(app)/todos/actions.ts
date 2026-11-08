@@ -170,6 +170,25 @@ export async function setTodoCompleted(
   return {};
 }
 
+// Stars or unstars the todo, and every todo in its series if it repeats.
+export async function setTodoStarred(
+  id: string,
+  starred: boolean,
+): Promise<TodoActionState> {
+  await getCurrentUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_todo_starred", {
+    p_todo_id: id,
+    p_starred: starred,
+  });
+  if (error) {
+    return { error: "Couldn't update the star. Try again." };
+  }
+
+  revalidatePath("/", "layout");
+  return {};
+}
+
 export async function deleteTodo(id: string): Promise<TodoActionState> {
   await getCurrentUser();
   const supabase = await createClient();

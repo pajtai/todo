@@ -9,6 +9,7 @@ import { RecurrenceFields } from "../recurrence-fields";
 import {
   deleteTodo,
   setTodoCompleted,
+  setTodoStarred,
   updateTodo,
   type TodoActionState,
 } from "./actions";
@@ -26,7 +27,7 @@ export function activeSeries(todo: Todo) {
 
 export type Todo = Pick<
   Tables<"todos">,
-  "id" | "title" | "notes" | "due_on" | "completed_at"
+  "id" | "title" | "notes" | "due_on" | "completed_at" | "starred"
 > & {
   areas: AreaOption[];
   created_at?: string;
@@ -46,6 +47,7 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
   const [completed, setOptimisticCompleted] = useOptimistic(
     todo.completed_at !== null,
   );
+  const [starred, setOptimisticStarred] = useOptimistic(todo.starred);
 
   function toggle() {
     const next = !completed;
@@ -53,6 +55,16 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
     startTransition(async () => {
       setOptimisticCompleted(next);
       const result = await setTodoCompleted(todo.id, next);
+      setError(result.error);
+    });
+  }
+
+  function toggleStar() {
+    const next = !starred;
+    setError(undefined);
+    startTransition(async () => {
+      setOptimisticStarred(next);
+      const result = await setTodoStarred(todo.id, next);
       setError(result.error);
     });
   }
@@ -111,6 +123,24 @@ export function TodoItem({ todo, areaOptions }: TodoItemProps) {
           {todo.due_on && (
             <span className="text-sm text-gray-500">Due {todo.due_on}</span>
           )}
+        </button>
+        <button
+          type="button"
+          onClick={toggleStar}
+          aria-pressed={starred}
+          aria-label={`Star "${todo.title}"`}
+          title={
+            repeats
+              ? starred
+                ? "Unstar every repeat"
+                : "Star every repeat"
+              : starred
+                ? "Unstar"
+                : "Star"
+          }
+          className={starred ? "text-amber-500" : "text-gray-400"}
+        >
+          {starred ? "★" : "☆"}
         </button>
         <button
           type="button"

@@ -49,6 +49,7 @@ async function AreaDetail({
       .order("name"),
     selectTodos(supabase, id)
       .is("completed_at", null)
+      .order("starred", { ascending: false })
       .order("due_on", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
     selectTodos(supabase, id)

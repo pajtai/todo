@@ -24,7 +24,7 @@ Set a rule in a task's edit form under **Repeats** (on `/todos`, a category's pa
 
 There's no cron. `/todos` and `/review` call `ensure_habit_todos()` (the name predates the change) before they render. For each active series whose rule matches today, it creates today's todo, using the user's local date from `profiles.timezone` (`user_today()`).
 
-- **Copies the latest todo.** The new todo gets the title, notes, and categories of the series' most recent todo, so editing a task (renaming it, attaching it to a category) carries forward.
+- **Copies the latest todo.** The new todo gets the title, notes, star, and categories of the series' most recent todo, so editing a task (renaming it, attaching it to a category) carries forward.
 - **One open todo per series.** A series with an incomplete todo, from any day, gets no new one. Completing or deleting it lets the next page load create today's (if the rule matches today). Missed days still count as missed, because those come from the rule.
 - **Idempotent.** The unique index on `todos (user_id, series_id, occurrence_date)` makes repeated calls, including concurrent ones, create nothing new.
 - **No backfill.** Past occurrences are never created. Missed days are derived from the rule, not from rows (see below).
@@ -46,6 +46,7 @@ A todo completed late, say on Tuesday for Monday's occurrence, counts toward Mon
 ## UI
 
 - Task edit form: **Repeats** section on every task.
+- Starring a repeating task (☆ in lists) stars every todo in its series, past and future; unstarring clears them all.
 - `/todos` and category pages: repeating tasks show ↻, with the rule in the tooltip.
 - `/categories/[id]`, when the category has repeating tasks: a **Repeating tasks** section with each task and its rule, the current streak, the 30-day rate, and a 30-day grid (done / missed / due today / not scheduled). Rendered by `categories/[id]/repeating-stats.tsx`. Without repeating tasks the section is hidden.
 - `/review`: **Repeating tasks** lists each category's rate for the period, above the grouping (only the filtered category with `?category=`).

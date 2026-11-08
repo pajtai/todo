@@ -84,7 +84,7 @@ type Ctx = {
 
 type TodoDetails = Pick<
   Todo,
-  "notes" | "due_on" | "created_at" | "series"
+  "notes" | "due_on" | "created_at" | "series" | "starred"
 >;
 
 // What the edit form needs: the row plus details `review_completed` lacks.
@@ -97,6 +97,7 @@ function editable(todo: ReviewTodo, ctx: Ctx): Todo {
     notes: details?.notes ?? null,
     due_on: details?.due_on ?? null,
     created_at: details?.created_at,
+    starred: details?.starred ?? false,
     series: details?.series ?? null,
     areas: todo.areas
       .filter((area) => area.depth === 0)
@@ -129,7 +130,14 @@ function TodoLine({
       completedAt={toLocalInput(new Date(todo.completed_at), ctx.timeZone)}
       header={
         <span className="flex items-baseline justify-between gap-3">
-          <span>{todo.title}</span>
+          <span>
+            {ctx.details.get(todo.todo_id)?.starred && (
+              <span className="mr-1 text-amber-500">
+                ★<span className="sr-only">Starred:</span>
+              </span>
+            )}
+            {todo.title}
+          </span>
           <span className="shrink-0 text-xs text-gray-500">
             {showDate
               ? `${formatDay(todo.completed_local_date)}, ${time}`
@@ -344,7 +352,7 @@ async function Review({
     supabase
       .from("todos")
       .select(
-        "id, notes, due_on, created_at, series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
+        "id, notes, due_on, starred, created_at, series:todo_series(id, recurrence, recurrence_days, starts_on, ended_on)",
       )
       .gte("completed_at", `${addDays(period.from, -1)}T00:00:00Z`)
       .lt("completed_at", `${addDays(period.to, 2)}T00:00:00Z`),

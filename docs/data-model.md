@@ -23,6 +23,7 @@ One row per user, created by the `on_auth_user_created` trigger on `auth.users`.
 | `notes` | Optional |
 | `due_on` | Optional date, with no time or timezone |
 | `completed_at` | Null means open. A timestamp, not a boolean, because the Review view needs to know when a todo was done |
+| `starred` | Default false. On a repeating todo the star belongs to the whole series: `set_todo_starred(todo, starred)` updates every todo in it, and new occurrences copy it. Open lists show starred todos first |
 | `series_id`, `occurrence_date` | Set on repeating todos: the `todo_series` row with the rule, and the day this todo is for. Unique per user, series, and date. See [habits.md](habits.md) |
 | `habit_area_id` | **Deprecated**, no longer written. Kept until the old deployed code is gone |
 | `created_at`, `updated_at` | `updated_at` is maintained by the `set_updated_at()` trigger |
@@ -93,7 +94,7 @@ A repeat rule for a task: `recurrence`, `recurrence_days`, `starts_on`, and `end
 
 ## Recurrence functions
 
-`user_today()`, `ensure_habit_todos()`, `set_todo_recurrence()`, `series_occurrences()`, and `series_next_occurrence()`. See [habits.md](habits.md).
+`user_today()`, `ensure_habit_todos()`, `set_todo_recurrence()`, `set_todo_starred()`, `series_occurrences()`, and `series_next_occurrence()`. See [habits.md](habits.md).
 
 The old `habit_occurrences()` and `habit_streaks()` functions, and the `areas` columns `recurrence`, `recurrence_days`, `habit_title`, and `starts_on`, are **deprecated**. Their data was moved to `todo_series` and cleared. They're kept so the previously deployed app doesn't error, and a later migration should drop them once the new code is deployed.
 

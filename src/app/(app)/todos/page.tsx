@@ -71,6 +71,7 @@ async function TodoLists({
   const [open, recent, profile, options] = await Promise.all([
     selectTodos(supabase, areaId)
       .is("completed_at", null)
+      .order("starred", { ascending: false })
       .order("due_on", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
     selectTodos(supabase, areaId)
