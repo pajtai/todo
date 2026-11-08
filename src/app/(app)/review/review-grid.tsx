@@ -83,7 +83,6 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
   }
   // A top-level group (depth 0) is a section with a shaded header row. Any
   // child groups (only if areas nest, which they no longer do) go inside.
-  // subcategories (depth 1) are collapsible rows inside it.
   function renderGroup(group: GridGroup, depth: number): ReactNode {
     const open = !collapsed.has(group.key);
     const section = depth === 0;
