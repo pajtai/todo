@@ -14,6 +14,7 @@ type ListProps = {
   today: string;
   hideProject?: boolean;
   hideAreaId?: string;
+  convertible?: boolean;
 };
 
 function TodoList({
@@ -22,6 +23,7 @@ function TodoList({
   today,
   hideProject,
   hideAreaId,
+  convertible,
 }: ListProps) {
   return (
     <ul className="divide-y divide-gray-200">
@@ -33,6 +35,7 @@ function TodoList({
           today={today}
           hideProject={hideProject}
           hideAreaId={hideAreaId}
+          convertible={convertible}
         />
       ))}
     </ul>
@@ -97,6 +100,18 @@ async function PlanSections() {
       ),
     }))
     .filter((section) => section.todos.length > 0);
+
+  // Inbox: the same rule as Capture — no project, category, due date, or
+  // repeat — newest first.
+  const inbox = todos
+    .filter(
+      (todo) =>
+        todo.project_id === null &&
+        todo.due_on === null &&
+        todo.series === null &&
+        todo.areas.length === 0,
+    )
+    .toSorted((a, b) => b.created_at.localeCompare(a.created_at));
 
   return (
     <>
@@ -179,6 +194,17 @@ async function PlanSections() {
             <TodoList todos={todos} {...list} hideAreaId={area.id} />
           </div>
         ))}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-semibold">Inbox ({inbox.length})</h2>
+        {inbox.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Inbox zero. Everything has a project, category, or due date.
+          </p>
+        ) : (
+          <TodoList todos={inbox} {...list} convertible />
+        )}
       </section>
     </>
   );
