@@ -6,6 +6,7 @@ import { loadToday, loadTodoOptions, selectTodos } from "@/lib/todos";
 import { AreaChip } from "../area-chip";
 import { TodoItem, type Todo } from "../_todos/todo-item";
 import { ProjectHeader } from "./project-header";
+import { ProjectQuickAdd } from "./project-quick-add";
 import { SectionHeader } from "./section-header";
 
 type ListProps = {
@@ -142,10 +143,13 @@ async function PlanSections() {
             >
               <ProjectHeader project={project} openCount={projectTodos.length} />
               {projectTodos.length === 0 ? (
-                <p className="text-sm text-gray-500">
-                  No open tasks. Pick this project in a task&apos;s edit form
-                  to add one.
-                </p>
+                <>
+                  <p className="text-sm text-gray-500">
+                    No open tasks. Pick this project in a task&apos;s edit form
+                    to add one.
+                  </p>
+                  <ProjectQuickAdd projectId={project.id} />
+                </>
               ) : (
                 <TodoList todos={projectTodos} {...list} hideProject />
               )}
