@@ -6,7 +6,7 @@ The nav has four screens. `/` and `/todos` (the old single list) redirect to `/d
 | --- | --- | --- |
 | **Do** | `/do` | Open tasks that are starred, due today or earlier, or a repeating task's occurrence for today (or an earlier, still-open one). Grouped as **Overdue** (due before today), **Today** (due today, or a repeat with no due date), and **Starred** (everything else). Plus **Completed today** |
 | **Capture** | `/capture` | The quick-add box and the **Inbox**: open tasks with no project, no category, no due date, and no repeat. New tasks land here; giving one a project, category, or due date files it. Each inbox task has a **Convert to…** dropdown that turns it into a project or a category (see below) |
-| **Plan** | `/plan` | **Deadlines**: every open task with a due date, soonest first. **Projects**: each active project with its open tasks, plus New project and Archived projects. **Categories**: open tasks *not in a project*, under each category they're in (each task hides the chip for the category it's listed under). Links to `/categories` to manage categories |
+| **Plan** | `/plan` | **Deadlines**: every open task with a due date, soonest first. **Projects**: each active project with its open tasks and Archived projects; the **+** beside the heading opens a New project form. **Categories**: open tasks *not in a project*, under each category they're in (each task hides the chip for the category it's listed under); the **+** beside the heading opens a New category form. Each form closes once it saves (or on Cancel). Links to `/categories` to manage categories |
 | **Review** | `/review` | Completed tasks over a period. See [review.md](review.md) |
 
 ## Converting an inbox task

@@ -5,9 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { loadToday, loadTodoOptions, selectTodos } from "@/lib/todos";
 import { AreaChip } from "../area-chip";
 import { TodoItem, type Todo } from "../_todos/todo-item";
-import { createProject } from "./actions";
-import { ProjectForm } from "./project-form";
 import { ProjectHeader } from "./project-header";
+import { SectionHeader } from "./section-header";
 
 type ListProps = {
   todos: Todo[];
@@ -111,7 +110,7 @@ async function PlanSections() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold">Projects</h2>
+        <SectionHeader title="Projects" creates="project" />
         {activeProjects.length === 0 && (
           <p className="text-sm text-gray-500">
             No projects yet. A project is the parent of the tasks that finish
@@ -138,14 +137,6 @@ async function PlanSections() {
             </div>
           );
         })}
-        <details className="flex flex-col gap-3 rounded border border-gray-200 p-3">
-          <summary className="cursor-pointer text-sm font-medium">
-            New project
-          </summary>
-          <div className="pt-3">
-            <ProjectForm action={createProject} submitLabel="Create" />
-          </div>
-        </details>
         {archivedProjects.length > 0 && (
           <details className="flex flex-col gap-1">
             <summary className="cursor-pointer text-sm font-medium">
@@ -163,12 +154,15 @@ async function PlanSections() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Categories</h2>
-          <Link href="/categories" className="text-sm underline">
-            Manage categories
-          </Link>
-        </div>
+        <SectionHeader
+          title="Categories"
+          creates="category"
+          aside={
+            <Link href="/categories" className="text-sm underline">
+              Manage categories
+            </Link>
+          }
+        />
         {categorySections.length === 0 && (
           <p className="text-sm text-gray-500">
             No open tasks outside a project have a category.
