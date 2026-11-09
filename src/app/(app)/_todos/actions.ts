@@ -32,8 +32,16 @@ export async function createTodo(
     return { error: invalid, title };
   }
 
+  // Set when the task is added from inside a project's list.
+  const projectId = formData.get("project_id");
+  if (projectId !== null && !isUuid(projectId)) {
+    return { error: "Choose a valid project.", title };
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.from("todos").insert({ title });
+  const { error } = await supabase
+    .from("todos")
+    .insert({ title, project_id: projectId });
   if (error) {
     return { error: "Couldn't add that todo. Try again.", title };
   }
