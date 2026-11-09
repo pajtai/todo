@@ -14,9 +14,16 @@ type ListProps = {
   options: Awaited<ReturnType<typeof loadTodoOptions>>;
   today: string;
   hideProject?: boolean;
+  hideAreaId?: string;
 };
 
-function TodoList({ todos, options, today, hideProject }: ListProps) {
+function TodoList({
+  todos,
+  options,
+  today,
+  hideProject,
+  hideAreaId,
+}: ListProps) {
   return (
     <ul className="divide-y divide-gray-200">
       {todos.map((todo) => (
@@ -26,6 +33,7 @@ function TodoList({ todos, options, today, hideProject }: ListProps) {
           {...options}
           today={today}
           hideProject={hideProject}
+          hideAreaId={hideAreaId}
         />
       ))}
     </ul>
@@ -174,7 +182,7 @@ async function PlanSections() {
             <div>
               <AreaChip area={area} />
             </div>
-            <TodoList todos={todos} {...list} />
+            <TodoList todos={todos} {...list} hideAreaId={area.id} />
           </div>
         ))}
       </section>

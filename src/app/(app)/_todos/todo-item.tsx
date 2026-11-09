@@ -47,6 +47,8 @@ type TodoItemProps = {
   today?: string;
   /** Hide the project link, e.g. inside that project's own list. */
   hideProject?: boolean;
+  /** Hide this category's chip, e.g. inside that category's own list. */
+  hideAreaId?: string;
   /** Offer "Convert to project / category", as the inbox does. */
   convertible?: boolean;
 };
@@ -57,6 +59,7 @@ export function TodoItem({
   projectOptions,
   today,
   hideProject,
+  hideAreaId,
   convertible,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
@@ -126,6 +129,7 @@ export function TodoItem({
   const overdue =
     !completed && today !== undefined && todo.due_on !== null && todo.due_on < today;
   const project = hideProject ? null : todo.project;
+  const areas = todo.areas.filter((area) => area.id !== hideAreaId);
 
   return (
     <li className="flex flex-col gap-1 py-2">
@@ -212,7 +216,7 @@ export function TodoItem({
           Delete
         </button>
       </div>
-      {(project || todo.areas.length > 0) && (
+      {(project || areas.length > 0) && (
         <div className="ml-7 flex flex-wrap gap-1.5">
           {project && (
             <Link
@@ -223,7 +227,7 @@ export function TodoItem({
               {project.name}
             </Link>
           )}
-          {todo.areas.map((area) => (
+          {areas.map((area) => (
             <AreaChip key={area.id} area={area} />
           ))}
         </div>
