@@ -1,8 +1,42 @@
 @import "tailwindcss";
 
+/*
+ * Light and dark mode. `data-theme` on <html> is the user's saved choice (see
+ * ThemeToggle); without it, the device's setting decides. Components use plain
+ * gray/black/white utilities, and each palette variable below picks its light
+ * or dark value with light-dark(), so most components need no `dark:` classes.
+ * Unlayered rules beat Tailwind's @theme defaults.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light dark;
+
+  --background: light-dark(#ffffff, #0a0a0a);
+  --foreground: light-dark(#171717, #ededed);
+
+  /* Dark mode flips the gray scale: borders and fills darken, text lightens. */
+  --color-gray-50: light-dark(oklch(98.5% 0.002 247.839), oklch(21% 0.034 264.665));
+  --color-gray-100: light-dark(oklch(96.7% 0.003 264.542), oklch(27.8% 0.033 256.848));
+  --color-gray-200: light-dark(oklch(92.8% 0.006 264.531), oklch(27.8% 0.033 256.848));
+  --color-gray-300: light-dark(oklch(87.2% 0.01 258.338), oklch(37.3% 0.034 259.733));
+  --color-gray-400: light-dark(oklch(70.7% 0.022 261.325), oklch(55.1% 0.027 264.364));
+  --color-gray-500: light-dark(oklch(55.1% 0.027 264.364), oklch(70.7% 0.022 261.325));
+  --color-gray-600: light-dark(oklch(44.6% 0.03 256.802), oklch(87.2% 0.01 258.338));
+
+  /* "Black" is the ink color and "white" the paper, so bg-black buttons with
+     text-white invert, and bg-white fills match the page. */
+  --color-black: light-dark(#000, #ededed);
+  --color-white: light-dark(#fff, #0a0a0a);
+
+  --color-red-300: light-dark(oklch(80.8% 0.114 19.571), oklch(39.6% 0.141 25.723));
+  --color-red-600: light-dark(oklch(57.7% 0.245 27.325), oklch(70.4% 0.191 22.216));
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -10,13 +44,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
