@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../(auth)/actions";
+import type { Theme } from "./actions";
+import { ThemeToggle } from "./theme-toggle";
 import { TimezoneSync } from "./timezone-sync";
 
 async function UserMenu() {
@@ -10,13 +12,14 @@ async function UserMenu() {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("timezone")
+    .select("timezone, theme")
     .eq("id", user.id)
     .single();
 
   return (
     <div className="flex items-center gap-4 text-sm">
       {profile?.timezone === "UTC" && <TimezoneSync />}
+      <ThemeToggle saved={(profile?.theme as Theme | null) ?? null} />
       <span>Signed in as {user.email}</span>
       <form action={signOut}>
         <button type="submit" className="underline">

@@ -11,6 +11,7 @@ One row per user, created by the `on_auth_user_created` trigger on `auth.users`.
 | `id` | Primary key; the `auth.users` id |
 | `display_name` | Optional |
 | `timezone` | IANA zone name, default `UTC`. Set from the browser on first load. Defines the user's "today" |
+| `theme` | `light`, `dark`, or null (follow the device). Set by the header toggle. See [theme.md](theme.md) |
 | `created_at` | |
 
 ## `todos`
