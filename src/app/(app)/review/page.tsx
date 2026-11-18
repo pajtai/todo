@@ -38,6 +38,7 @@ import {
   type GridRow,
   type GridTodo,
 } from "./review-grid";
+import { TASK_LIST_CLASS } from "../_todos/task-card";
 import { ReviewTodoItem } from "./review-todo-item";
 
 const GROUP_LABELS: Record<GroupBy, string> = {
@@ -290,7 +291,7 @@ function ByDay({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
             {day.date === ctx.today ? "Today" : formatDay(day.date)}
             <Count n={day.todos.length} />
           </h2>
-          <ul className="divide-y divide-gray-100">
+          <ul className={TASK_LIST_CLASS}>
             {day.todos.map((todo) => (
               <TodoLine key={todo.todo_id} todo={todo} ctx={ctx} showAreas />
             ))}

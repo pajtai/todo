@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadToday, loadTodoOptions, selectTodos } from "@/lib/todos";
 import { AreaChip } from "../area-chip";
+import { TASK_LIST_CLASS } from "../_todos/task-card";
 import { TodoItem, type Todo } from "../_todos/todo-item";
 import { ProjectHeader } from "./project-header";
 import { ProjectQuickAdd } from "./project-quick-add";
@@ -27,7 +28,7 @@ function TodoList({
   convertible,
 }: ListProps) {
   return (
-    <ul className="divide-y divide-gray-200">
+    <ul className={TASK_LIST_CLASS}>
       {todos.map((todo) => (
         <TodoItem
           key={todo.id}

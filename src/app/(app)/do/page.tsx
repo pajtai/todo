@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadToday, loadTodoOptions, localDate, selectTodos } from "@/lib/todos";
+import { TASK_LIST_CLASS } from "../_todos/task-card";
 import { TodoItem, type Todo } from "../_todos/todo-item";
 
 // A day is at most 26 hours in any timezone, so this window always covers
@@ -66,7 +67,7 @@ async function DoLists() {
   );
 
   const list = (todos: Todo[]) => (
-    <ul className="divide-y divide-gray-200">
+    <ul className={TASK_LIST_CLASS}>
       {todos.map((todo) => (
         <TodoItem key={todo.id} todo={todo} {...options} today={today} />
       ))}

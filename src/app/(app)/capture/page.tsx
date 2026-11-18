@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadToday, loadTodoOptions, selectTodos } from "@/lib/todos";
 import { QuickAdd } from "../_todos/quick-add";
+import { TASK_LIST_CLASS } from "../_todos/task-card";
 import { TodoItem } from "../_todos/todo-item";
 
 // The inbox: open tasks with no project, no category, and no due date.
@@ -38,7 +39,7 @@ async function Inbox() {
           Inbox zero. Everything has a project, category, or due date.
         </p>
       ) : (
-        <ul className="divide-y divide-gray-200">
+        <ul className={TASK_LIST_CLASS}>
           {inbox.data.map((todo) => (
             <TodoItem
               key={todo.id}

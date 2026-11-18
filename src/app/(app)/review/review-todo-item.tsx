@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import type { AreaOption } from "@/lib/areas";
+import { TASK_CARD_CLASS } from "../_todos/task-card";
 import { EditForm, type Todo } from "../_todos/todo-item";
 
 type ReviewTodoItemProps = {
@@ -28,7 +29,7 @@ export function ReviewTodoItem({
 
   if (editing) {
     return (
-      <li className="py-2">
+      <li className={`${TASK_CARD_CLASS} py-3`}>
         <EditForm
           todo={todo}
           areaOptions={areaOptions}
@@ -40,7 +41,7 @@ export function ReviewTodoItem({
   }
 
   return (
-    <li className="flex flex-col gap-1 py-1.5">
+    <li className={`${TASK_CARD_CLASS} flex flex-col gap-1 py-1.5`}>
       <button
         type="button"
         onClick={() => setEditing(true)}

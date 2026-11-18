@@ -5,6 +5,7 @@ import { isUuid } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadTodoOptions, selectTodos } from "@/lib/todos";
+import { TASK_LIST_CLASS } from "../../_todos/task-card";
 import { TodoItem } from "../../_todos/todo-item";
 import { RepeatingStats } from "./repeating-stats";
 
@@ -77,7 +78,7 @@ async function AreaDetail({
       <RepeatingStats supabase={supabase} areaId={area.id} />
       <section className="flex flex-col gap-1">
         <h2 className="font-medium">Open ({open.data.length})</h2>
-        <ul className="divide-y divide-gray-200">
+        <ul className={TASK_LIST_CLASS}>
           {open.data.map((todo) => (
             <TodoItem key={todo.id} todo={todo} {...options} />
           ))}
@@ -85,7 +86,7 @@ async function AreaDetail({
       </section>
       <section className="flex flex-col gap-1">
         <h2 className="font-medium">Completed ({completed.data.length})</h2>
-        <ul className="divide-y divide-gray-200">
+        <ul className={TASK_LIST_CLASS}>
           {completed.data.map((todo) => (
             <TodoItem key={todo.id} todo={todo} {...options} />
           ))}

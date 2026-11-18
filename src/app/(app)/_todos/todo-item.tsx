@@ -7,6 +7,7 @@ import type { Tables } from "@/lib/database.types";
 import { describeRecurrence } from "@/lib/habits";
 import { AreaChip } from "../area-chip";
 import { RecurrenceFields } from "../recurrence-fields";
+import { TASK_CARD_CLASS } from "./task-card";
 import {
   convertTodo,
   deleteTodo,
@@ -115,7 +116,7 @@ export function TodoItem({
 
   if (editing) {
     return (
-      <li className="py-2">
+      <li className={`${TASK_CARD_CLASS} py-3`}>
         <EditForm
           todo={todo}
           areaOptions={areaOptions}
@@ -132,7 +133,7 @@ export function TodoItem({
   const areas = todo.areas.filter((area) => area.id !== hideAreaId);
 
   return (
-    <li className="flex flex-col gap-1 py-2">
+    <li className={`${TASK_CARD_CLASS} flex flex-col gap-1 py-2`}>
       <div className="flex items-start gap-3">
         <input
           type="checkbox"

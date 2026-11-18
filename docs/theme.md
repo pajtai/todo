@@ -17,3 +17,7 @@ The database is the source of truth: when the header loads, the toggle writes th
 - `red-600` (errors) lightens; `red-300` (missed habit days) darkens.
 
 Using a color outside those palettes? Add its dark value in `globals.css`, or it stays the same in both modes. Category colors are user-picked and stay as-is.
+
+## Task cards
+
+Every task row (`TodoItem`, and `ReviewTodoItem` on /review) is a card: `TASK_CARD_CLASS` in `src/app/(app)/_todos/task-card.ts` gives it a rounded border on a `gray-50` fill, and lists of tasks use `TASK_LIST_CLASS` to put space between cards instead of divider lines. Both are gray-scale classes, so the cards follow light and dark mode on their own. The constants live in a plain module, not the `"use client"` `todo-item.tsx`, because server pages import them, and a client module's exports reach server components only as references.
