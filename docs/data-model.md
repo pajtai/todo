@@ -85,7 +85,7 @@ Many-to-many link between todos and areas. Its insert policy also requires that 
 
 ## `area_paths` view
 
-Each area paired with itself (depth 0) and its ancestors (depth 1+). Since categories no longer nest, every area now has only its depth-0 row; the view, `review_completed`, and the Review roll-up code still handle ancestors. It's `security_invoker`, so RLS applies.
+Each area paired with itself (depth 0) and its ancestors (depth 1+). Since categories no longer nest, every area now has only its depth-0 row; the view and `review_completed` still return ancestors; Review shows only the directly attached ones. It's `security_invoker`, so RLS applies.
 
 | `area_id` | `ancestor_id` | `depth` |
 | --- | --- | --- |

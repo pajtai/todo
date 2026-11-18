@@ -13,7 +13,7 @@
 - [Local development](docs/local-development.md) — running the app against hosted Supabase, DB scripts, migrations, Supabase client helpers
 - [Auth](docs/auth.md) — sign-up and login flow, hosted auth settings, protecting pages, Cache Components rules, RLS convention
 - [Data model](docs/data-model.md) — tables and columns, area hierarchy and archiving rules, sample data, how database tests work
-- [Review](docs/review.md) — `review_completed` RPC, periods and timezones, roll-up grouping, URL params
+- [Review](docs/review.md) — `review_completed` RPC, periods and timezones, task grid with category pills, URL params
 - [Deployment](docs/deployment.md) — Vercel project, env vars, shipping migrations, auth URLs, email limits, security checks
 - [Habits](docs/habits.md) — repeating tasks (todo_series), streaks per category, lazy today-only generation, missed days, streaks and rates
 - [Theme](docs/theme.md) — light/dark mode: saved in `profiles.theme`, applied before paint, palette remapped in `globals.css`
