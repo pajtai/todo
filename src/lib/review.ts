@@ -71,15 +71,6 @@ export function datesInRange(from: string, to: string) {
   return dates;
 }
 
-/** Distinct todos completed on each local date. */
-export function countByDay(todos: ReviewTodo[]) {
-  const days: Record<string, number> = {};
-  for (const todo of todos) {
-    days[todo.completed_local_date] = (days[todo.completed_local_date] ?? 0) + 1;
-  }
-  return days;
-}
-
 /** The user's current local date, e.g. "2026-11-03". */
 export function localDate(instant: Date, timeZone: string) {
   return instant.toLocaleDateString("en-CA", { timeZone });
@@ -277,69 +268,10 @@ export function summarize(todos: ReviewTodo[]): Summary {
 
 export type AreaInfo = Omit<ReviewArea, "depth">;
 
-export type AreaNode = {
-  area: AreaInfo;
-  /** Distinct todos in this area or any area below it. */
-  count: number;
-  /** Like `count`, per local completion date. */
-  days: Record<string, number>;
-  /** Todos attached directly to this area. */
-  todos: ReviewTodo[];
-  children: AreaNode[];
-};
-
-function info(area: ReviewArea): AreaInfo {
+/** An area without its per-todo `depth`. */
+export function areaInfo(area: ReviewArea): AreaInfo {
   const { id, name, color, parent_id } = area;
   return { id, name, color, parent_id };
-}
-
-function byCountThenName(a: AreaNode, b: AreaNode) {
-  return b.count - a.count || a.area.name.localeCompare(b.area.name);
-}
-
-export function groupByArea(todos: ReviewTodo[]): {
-  roots: AreaNode[];
-  unassigned: ReviewTodo[];
-} {
-  const nodes = new Map<string, AreaNode>();
-  const unassigned: ReviewTodo[] = [];
-
-  for (const todo of todos) {
-    if (todo.areas.length === 0) {
-      unassigned.push(todo);
-      continue;
-    }
-    for (const area of todo.areas) {
-      let node = nodes.get(area.id);
-      if (!node) {
-        node = { area: info(area), count: 0, days: {}, todos: [], children: [] };
-        nodes.set(area.id, node);
-      }
-      // The RPC lists each area once per todo, so this counts distinct todos.
-      node.count += 1;
-      const day = todo.completed_local_date;
-      node.days[day] = (node.days[day] ?? 0) + 1;
-      if (area.depth === 0) {
-        node.todos.push(todo);
-      }
-    }
-  }
-
-  const roots: AreaNode[] = [];
-  for (const node of nodes.values()) {
-    const parent = node.area.parent_id
-      ? nodes.get(node.area.parent_id)
-      : undefined;
-    (parent ? parent.children : roots).push(node);
-  }
-
-  const sort = (list: AreaNode[]) => {
-    list.sort(byCountThenName);
-    list.forEach((node) => sort(node.children));
-  };
-  sort(roots);
-
-  return { roots, unassigned };
 }
 
 export function groupByDay(
@@ -373,7 +305,7 @@ export function breadcrumbs(todo: ReviewTodo): AreaInfo[][] {
       let current: ReviewArea | undefined = area;
       while (current && !seen.has(current.id)) {
         seen.add(current.id);
-        path.unshift(info(current));
+        path.unshift(areaInfo(current));
         current = current.parent_id ? byId.get(current.parent_id) : undefined;
       }
       return path;

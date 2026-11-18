@@ -4,12 +4,11 @@ import { isUuid, type AreaOption } from "@/lib/areas";
 import { getCurrentUser } from "@/lib/auth";
 import {
   addDays,
+  areaInfo,
   breadcrumbs,
-  countByDay,
   datesInRange,
   filterTodos,
   formatDay,
-  groupByArea,
   groupByDay,
   localDate,
   parseGroupBy,
@@ -19,7 +18,6 @@ import {
   summarize,
   toReviewTodos,
   type AreaInfo,
-  type AreaNode,
   type GroupBy,
   type HrefChanges,
   type ReviewState,
@@ -34,7 +32,6 @@ import { AreaSelect } from "./area-select";
 import {
   ReviewGrid,
   type GridDay,
-  type GridGroup,
   type GridRow,
   type GridTodo,
 } from "./review-grid";
@@ -42,7 +39,7 @@ import { TASK_LIST_CLASS } from "../_todos/task-card";
 import { ReviewTodoItem } from "./review-todo-item";
 
 const GROUP_LABELS: Record<GroupBy, string> = {
-  category: "By category",
+  category: "By task",
   day: "By day",
 };
 
@@ -198,7 +195,9 @@ function gridTodo(todo: ReviewTodo, ctx: Ctx): GridTodo {
 }
 
 // A repeating task's todos share one row; other todos get their own. The RPC
-// returns newest first, so each row's items are too.
+// returns newest first, so the rows (by their newest todo) and each row's
+// items are too. A row's pills are its newest todo's directly attached
+// categories.
 function gridRows(todos: ReviewTodo[], ctx: Ctx): GridRow[] {
   const rows = Map.groupBy(
     todos,
@@ -207,35 +206,18 @@ function gridRows(todos: ReviewTodo[], ctx: Ctx): GridRow[] {
   return [...rows].map(([key, list]) => ({
     key,
     items: list.map((todo) => gridTodo(todo, ctx)),
+    chips: list[0].areas
+      .filter((area) => area.depth === 0)
+      .map((area) => ({
+        area: areaInfo(area),
+        href: ctx.href({ area: area.id }),
+        active: area.id === ctx.state.area,
+      })),
   }));
 }
 
-function gridGroup(node: AreaNode, ctx: Ctx): GridGroup {
-  return {
-    key: node.area.id,
-    area: node.area,
-    href: ctx.href({ area: node.area.id }),
-    active: node.area.id === ctx.state.area,
-    count: node.count,
-    days: node.days,
-    rows: gridRows(node.todos, ctx),
-    children: node.children.map((child) => gridGroup(child, ctx)),
-  };
-}
-
-// Days as columns; a filled box is a completed todo, rolled up to its areas.
-function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
-  const { roots, unassigned } = groupByArea(todos);
-  const groups = roots.map((node) => gridGroup(node, ctx));
-  if (unassigned.length > 0) {
-    groups.push({
-      key: "unassigned",
-      count: unassigned.length,
-      days: countByDay(unassigned),
-      rows: gridRows(unassigned, ctx),
-      children: [],
-    });
-  }
+// Days as columns, one row per task; a filled box is a day it was done.
+function ByTask({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
   const { from, to } = ctx.state.period;
   // Newest day on the left, going back in time to the right.
   const days: GridDay[] = datesInRange(from, to).reverse().map((date) => {
@@ -251,7 +233,7 @@ function ByArea({ todos, ctx }: { todos: ReviewTodo[]; ctx: Ctx }) {
       isToday: date === ctx.today,
     };
   });
-  return <ReviewGrid days={days} groups={groups} areaOptions={ctx.areaOptions} />;
+  return <ReviewGrid days={days} rows={gridRows(todos, ctx)} areaOptions={ctx.areaOptions} />;
 }
 
 type RepeatingRate = { area: AreaInfo; rate: string };
@@ -553,7 +535,7 @@ async function Review({
             )}
           </p>
           <div className="flex flex-col gap-6">
-            {state.group === "category" && <ByArea todos={todos} ctx={ctx} />}
+            {state.group === "category" && <ByTask todos={todos} ctx={ctx} />}
             {state.group === "day" && <ByDay todos={todos} ctx={ctx} />}
           </div>
         </>

@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { Fragment, useState, type ReactNode } from "react";
+import { useState } from "react";
 import type { AreaOption } from "@/lib/areas";
 import type { AreaInfo } from "@/lib/review";
 import { AreaChip } from "../area-chip";
@@ -27,6 +26,14 @@ export type GridTodo = {
   completedAt: string;
 };
 
+/** A category pill under a task's name. */
+export type GridChip = {
+  area: AreaInfo;
+  /** Filters the review to this category. */
+  href: string;
+  active: boolean;
+};
+
 /**
  * One line in the grid: a single todo, or every completed todo of a
  * repeating task (one series), newest first.
@@ -34,145 +41,68 @@ export type GridTodo = {
 export type GridRow = {
   key: string;
   items: GridTodo[];
-};
-
-export type GridGroup = {
-  key: string;
-  /** Unset for the "Unassigned" group. */
-  area?: AreaInfo;
-  href?: string;
-  active?: boolean;
-  count: number;
-  /** Distinct todos per date in this group or any group below it. */
-  days: Record<string, number>;
-  rows: GridRow[];
-  children: GridGroup[];
+  /** The newest todo's categories; empty when it has none. */
+  chips: GridChip[];
 };
 
 type ReviewGridProps = {
   days: GridDay[];
-  groups: GridGroup[];
+  rows: GridRow[];
   areaOptions: AreaOption[];
 };
 
-// Area rows use the area's color (gray when it has none); its todos use a
-// darker shade of the same color so the two read as one group.
+// A done box takes a darker shade of the task's first category color, or gray
+// when the task has no category or the category has no color.
 const DEFAULT_AREA_COLOR = "#9ca3af"; // Tailwind gray-400
 
-function todoColor(areaColor: string) {
-  return `color-mix(in oklab, ${areaColor} 70%, black)`;
+function boxColor(row: GridRow) {
+  const color =
+    row.chips.find((chip) => chip.area.color)?.area.color ??
+    DEFAULT_AREA_COLOR;
+  return `color-mix(in oklab, ${color} 70%, black)`;
 }
 
-function allKeys(groups: GridGroup[]): string[] {
-  return groups.flatMap((group) => [group.key, ...allKeys(group.children)]);
-}
-
-export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+export function ReviewGrid({ days, rows, areaOptions }: ReviewGridProps) {
   const [editing, setEditing] = useState<string>();
   const columns = days.length + 1;
 
-  function toggle(key: string) {
-    setCollapsed((previous) => {
-      const next = new Set(previous);
-      if (!next.delete(key)) {
-        next.add(key);
-      }
-      return next;
-    });
-  }
-  // A top-level group (depth 0) is a section with a shaded header row. Any
-  // child groups (only if areas nest, which they no longer do) go inside.
-  function renderGroup(group: GridGroup, depth: number): ReactNode {
-    const open = !collapsed.has(group.key);
-    const section = depth === 0;
-    const indent = { paddingLeft: `${depth * 1}rem` };
-    const name = group.area?.name ?? "Unassigned";
-    const color = group.area?.color ?? DEFAULT_AREA_COLOR;
-    const rowBg = section ? "bg-gray-50" : "bg-white";
-
-    return (
-      <Fragment key={group.key}>
-        <tr
-          className={
-            section ? "border-y border-gray-300 bg-gray-50" : "border-t border-gray-200"
-          }
-        >
-          <th
-            scope="row"
-            className={`sticky left-0 ${rowBg} ${section ? "py-2" : "py-1.5"} pr-3 text-left font-normal`}
-          >
-            <div className="flex items-center gap-1.5" style={indent}>
-              <button
-                type="button"
-                onClick={() => toggle(group.key)}
-                aria-expanded={open}
-                aria-label={`${open ? "Collapse" : "Expand"} ${name}`}
-                className="w-4 shrink-0 text-gray-500"
+  return (
+    <div className="overflow-x-auto">
+      <table className="border-collapse text-sm">
+        <thead>
+          <tr>
+            <th className="sticky left-0 min-w-48 bg-white">
+              <span className="sr-only">Task</span>
+            </th>
+            {days.map((day) => (
+              <th
+                key={day.date}
+                scope="col"
+                title={day.label}
+                className={`w-7 px-0.5 pb-1 text-center text-xs leading-tight ${
+                  day.isToday ? "font-semibold" : "font-normal text-gray-500"
+                }`}
               >
-                {open ? "▾" : "▸"}
-              </button>
-              {section ? (
-                <span className="flex items-center gap-1.5 font-semibold">
-                  <span
-                    aria-hidden
-                    className="size-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  {group.href ? (
-                    <Link
-                      href={group.href}
-                      aria-current={group.active ? "true" : undefined}
-                      className="hover:underline"
-                    >
-                      {name}
-                    </Link>
-                  ) : (
-                    name
-                  )}
+                <span aria-hidden>
+                  {day.weekday}
+                  <br />
+                  {day.dayOfMonth}
                 </span>
-              ) : group.area ? (
-                <AreaChip
-                  area={group.area}
-                  href={group.href}
-                  active={group.active}
-                />
-              ) : (
-                <span className="font-medium">{name}</span>
-              )}
-              <span className="text-sm text-gray-500">{group.count}</span>
-            </div>
-          </th>
-          {days.map((day) => {
-            const n = group.days[day.date] ?? 0;
-            return (
-              <td key={day.date} className="p-0.5">
-                <div
-                  title={n > 0 ? `${name}: ${n} done on ${day.label}` : undefined}
-                  className={`mx-auto flex size-6 items-center justify-center rounded-sm text-[10px] ${
-                    n > 0
-                      ? "text-white"
-                      : "border border-gray-100"
-                  }`}
-                  style={n > 0 ? { backgroundColor: color } : undefined}
-                >
-                  {n > 1 && n}
-                  {n > 0 && <span className="sr-only"> done on {day.label}</span>}
-                </div>
-              </td>
-            );
-          })}
-        </tr>
-        {open &&
-          group.rows.map((row) => {
+                <span className="sr-only">{day.label}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
             const editingItem = row.items.find(
-              (item) => editing === `${group.key}:${item.todo.id}`,
+              (item) => editing === item.todo.id,
             );
             if (editingItem) {
               return (
-                <tr key={row.key}>
+                <tr key={row.key} className="border-t border-gray-200">
                   <td colSpan={columns} className="sticky left-0 py-2">
-                    <div className="max-w-xl" style={indent}>
+                    <div className="max-w-xl">
                       <EditForm
                         todo={editingItem.todo}
                         areaOptions={areaOptions}
@@ -186,29 +116,42 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
             }
             const [latest] = row.items;
             const byDate = Map.groupBy(row.items, (item) => item.date);
+            const color = boxColor(row);
             return (
-              <tr key={row.key} className="border-t border-gray-100">
+              <tr key={row.key} className="border-t border-gray-200">
                 <th
                   scope="row"
-                  className="sticky left-0 bg-white py-1 pr-3 text-left font-normal"
+                  className="sticky left-0 bg-white py-1.5 pr-3 text-left align-top font-normal"
                 >
-                  <div style={{ paddingLeft: `${depth + 1.5}rem` }}>
+                  <div className="flex flex-col items-start gap-1">
                     <button
                       type="button"
-                      onClick={() => setEditing(`${group.key}:${latest.todo.id}`)}
+                      onClick={() => setEditing(latest.todo.id)}
                       title={`Last done ${latest.doneLabel}. Click to edit.`}
                       className="text-left hover:underline"
                     >
                       {latest.todo.title}
                     </button>
+                    {row.chips.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {row.chips.map((chip) => (
+                          <AreaChip
+                            key={chip.area.id}
+                            area={chip.area}
+                            href={chip.href}
+                            active={chip.active}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </th>
                 {days.map((day) => {
                   const done = byDate.get(day.date);
                   if (!done) {
                     return (
-                      <td key={day.date} className="p-0.5">
-                        <div className="mx-auto size-6 rounded-sm border border-gray-100" />
+                      <td key={day.date} className="p-0.5 align-top">
+                        <div className="mx-auto mt-1 size-6 rounded-sm border border-gray-100" />
                       </td>
                     );
                   }
@@ -216,21 +159,17 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
                     .map((item) => `${item.todo.title}, done ${item.doneLabel}`)
                     .join("\n");
                   return (
-                    <td key={day.date} className="p-0.5">
+                    <td key={day.date} className="p-0.5 align-top">
                       {/* Each box edits the todo done that day. */}
                       <button
                         type="button"
-                        onClick={() =>
-                          setEditing(`${group.key}:${done[0].todo.id}`)
-                        }
+                        onClick={() => setEditing(done[0].todo.id)}
                         title={`${label}\nClick to edit.`}
-                        className="mx-auto flex size-6 items-center justify-center rounded-sm text-[10px] text-white"
-                        style={{ backgroundColor: todoColor(color) }}
+                        className="mx-auto mt-1 flex size-6 items-center justify-center rounded-sm text-[10px] text-white"
+                        style={{ backgroundColor: color }}
                       >
                         {done.length > 1 && done.length}
-                        <span className="sr-only">
-                          Edit {label}
-                        </span>
+                        <span className="sr-only">Edit {label}</span>
                       </button>
                     </td>
                   );
@@ -238,63 +177,8 @@ export function ReviewGrid({ days, groups, areaOptions }: ReviewGridProps) {
               </tr>
             );
           })}
-        {open && group.children.map((child) => renderGroup(child, depth + 1))}
-      </Fragment>
-    );
-  }
-
-  const keys = allKeys(groups);
-  const anyOpen = keys.some((key) => !collapsed.has(key));
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div>
-        <button
-          type="button"
-          onClick={() => setCollapsed(new Set(anyOpen ? keys : []))}
-          className="text-sm text-gray-500 underline"
-        >
-          {anyOpen ? "Collapse all" : "Expand all"}
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-sm">
-          <thead>
-            <tr>
-              <th className="sticky left-0 min-w-48 bg-white">
-                <span className="sr-only">Category or todo</span>
-              </th>
-              {days.map((day) => (
-                <th
-                  key={day.date}
-                  scope="col"
-                  title={day.label}
-                  className={`w-7 px-0.5 pb-1 text-center text-xs leading-tight ${
-                    day.isToday ? "font-semibold" : "font-normal text-gray-500"
-                  }`}
-                >
-                  <span aria-hidden>
-                    {day.weekday}
-                    <br />
-                    {day.dayOfMonth}
-                  </span>
-                  <span className="sr-only">{day.label}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          {groups.map((group, index) => (
-            <tbody key={group.key}>
-              {index > 0 && (
-                <tr aria-hidden>
-                  <td colSpan={columns} className="h-4" />
-                </tr>
-              )}
-              {renderGroup(group, 0)}
-            </tbody>
-          ))}
-        </table>
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 }

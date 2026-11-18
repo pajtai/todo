@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   breadcrumbs,
-  countByDay,
   datesInRange,
   filterTodos,
-  groupByArea,
   groupByDay,
   isDateString,
   localDate,
@@ -224,38 +222,6 @@ describe("filterTodos and summarize", () => {
   });
 });
 
-describe("groupByArea", () => {
-  it("builds the tree with rolled-up counts and an unassigned bucket", () => {
-    const { roots, unassigned } = groupByArea([run, stretchToday, loose]);
-    expect(
-      roots.map((node) => ({
-        name: node.area.name,
-        count: node.count,
-        direct: node.todos.length,
-        children: node.children.map((c) => [c.area.name, c.count]),
-      })),
-    ).toEqual([
-      {
-        name: "Get fit",
-        count: 1,
-        direct: 0,
-        children: [["Marathon training", 1]],
-      },
-      { name: "Stretch", count: 1, direct: 1, children: [] },
-    ]);
-    expect(unassigned).toEqual([loose]);
-  });
-
-  it("counts a todo once per area even when attached under two branches", () => {
-    const { roots } = groupByArea([both, run]);
-    const fit = roots.find((n) => n.area.id === "fit")!;
-    expect(fit.count).toBe(2);
-    expect(fit.children[0].count).toBe(2);
-    expect(Object.values(fit.days).reduce((a, b) => a + b)).toBe(2);
-    expect(roots.find((n) => n.area.id === "stretch")!.count).toBe(1);
-  });
-});
-
 describe("grid days", () => {
   it("lists every date in a range, across month ends", () => {
     expect(datesInRange("2026-10-30", "2026-11-02")).toEqual([
@@ -267,17 +233,6 @@ describe("grid days", () => {
     expect(datesInRange("2026-11-03", "2026-11-03")).toEqual(["2026-11-03"]);
   });
 
-  it("rolls per-day counts up to ancestor areas", () => {
-    const { roots } = groupByArea([run, stretchToday, loose]);
-    const fit = roots.find((n) => n.area.id === "fit")!;
-    expect(fit.days).toEqual({ [run.completed_local_date]: 1 });
-    expect(fit.children[0].days).toEqual(fit.days);
-    expect(countByDay([run, loose])).toEqual(
-      run.completed_local_date === loose.completed_local_date
-        ? { [run.completed_local_date]: 2 }
-        : { [run.completed_local_date]: 1, [loose.completed_local_date]: 1 },
-    );
-  });
 });
 
 describe("groupByDay and breadcrumbs", () => {

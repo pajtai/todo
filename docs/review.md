@@ -32,18 +32,18 @@ Periods are rolling windows that end on a date, and never include future days.
 - Older `?period=week` and `?period=month` links map to 7 and 30 days.
 - Invalid values fall back to the defaults.
 
-## Grouping and roll-up
+## Grouping
 
 The `review_completed` rows are grouped in TypeScript (`src/lib/review.ts`, unit-tested in `src/lib/review.test.ts`, run with `npm test`):
 
-- **By category** (default, `?group=category`): a grid (`review/review-grid.tsx`) with one column per day of the period, newest on the left. Each category is a section (its own `<tbody>`, so the day columns line up) with a shaded header row and its todos underneath. Sections can be collapsed or expanded (plus "Collapse all"). Categories no longer nest; the grid still renders child groups if `review_completed` ever returns ancestors. "Unassigned" is the last section. A todo row has a filled box on the day it was done, in a darker shade of its area's color (gray for areas without a color and for Unassigned). An area row's box is filled (in the area's color, with a number when more than one) when any todo in it was done that day. The count beside an area counts the same way. Todos are listed under the area they're attached to directly, and all completed todos of one repeating task (same `series_id`) share one row, named after the newest. Clicking the name edits the newest; clicking a filled box edits the todo done that day. Todos with no area go under "Unassigned". Long periods scroll sideways with the name column pinned.
+- **By task** (default, `?group=category`, the value kept so old links work): a grid (`review/review-grid.tsx`) with one column per day of the period, newest on the left, and one row per task, most recently done first. All completed todos of one repeating task (same `series_id`) share one row, named after the newest. Under each name, the newest todo's categories show as pills (`AreaChip`); clicking one filters the review to that category. A row has a filled box on each day it was done, in a darker shade of its first colored category (gray when it has none). Clicking the name edits the newest todo; clicking a filled box edits the todo done that day. Long periods scroll sideways with the name column pinned.
 - **By day** (`?group=day`): newest day first, each todo with its categories.
 
-A todo attached to several areas appears under each of them, so the counts in the tree can add up to more than the total.
+A todo attached to several categories appears once, with a pill for each.
 
 Above the grouping, **Repeating tasks** lists the completion rate of each category's repeating tasks for the period (see [habits.md](habits.md)). It shows even when nothing was completed.
 
-The retired **By type** grouping (`?group=type`) and the old `?group=area` fall back to By category, and `?type=` is ignored, so old links still work.
+The retired **By type** grouping (`?group=type`) and the old `?group=area` fall back to By task, and `?type=` is ignored, so old links still work.
 
 ## Editing
 
