@@ -2,7 +2,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { loadToday, loadTodoOptions, selectTodos } from "@/lib/todos";
+import { nextOccurrence } from "@/lib/habits";
+import {
+  loadToday,
+  loadTodoOptions,
+  selectSeriesWithLatest,
+  selectTodos,
+} from "@/lib/todos";
 import { AreaChip } from "../area-chip";
 import { TASK_LIST_CLASS } from "../_todos/task-card";
 import { TodoItem, type Todo } from "../_todos/todo-item";
@@ -10,8 +16,16 @@ import { ProjectHeader } from "./project-header";
 import { ProjectQuickAdd } from "./project-quick-add";
 import { SectionHeader } from "./section-header";
 
+/** A Plan task: an open todo, or a repeating task's next occurrence. */
+type PlanTodo = Todo & {
+  project_id: string | null;
+  created_at: string;
+  /** Set for a repeating task with no open todo: when the next one appears. */
+  upcomingOn?: string;
+};
+
 type ListProps = {
-  todos: Todo[];
+  todos: PlanTodo[];
   options: Awaited<ReturnType<typeof loadTodoOptions>>;
   today: string;
   hideProject?: boolean;
@@ -35,6 +49,7 @@ function TodoList({
           todo={todo}
           {...options}
           today={today}
+          upcomingOn={todo.upcomingOn}
           hideProject={hideProject}
           hideAreaId={hideAreaId}
           convertible={convertible}
@@ -49,12 +64,13 @@ async function PlanSections() {
   const supabase = await createClient();
   await supabase.rpc("ensure_habit_todos");
 
-  const [open, projects, areas, options, { today }] = await Promise.all([
+  const [open, series, projects, areas, options, { today }] = await Promise.all([
     selectTodos(supabase)
       .is("completed_at", null)
       .order("starred", { ascending: false })
       .order("due_on", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
+    selectSeriesWithLatest(supabase),
     supabase
       .from("projects")
       .select("id, name, description, archived_at")
@@ -68,7 +84,7 @@ async function PlanSections() {
     loadToday(supabase, user.id),
   ]);
 
-  if (open.error || projects.error || areas.error) {
+  if (open.error || series.error || projects.error || areas.error) {
     return (
       <p role="alert" className="text-red-600">
         Couldn&apos;t load your plan. Try reloading.
@@ -76,13 +92,28 @@ async function PlanSections() {
     );
   }
 
-  const todos = open.data;
+  // A repeating task with no open todo (just completed, or not due today)
+  // still belongs on Plan: its latest todo stands in for the next occurrence,
+  // which copies that todo's title, project and categories.
+  const openSeries = new Set(open.data.map((todo) => todo.series?.id));
+  const upcoming: PlanTodo[] = series.data.flatMap(({ todos: [latest], ...rule }) => {
+    const upcomingOn = nextOccurrence(rule, today);
+    if (!latest || openSeries.has(rule.id) || !upcomingOn) return [];
+    return [{ ...latest, series: rule, upcomingOn }];
+  });
+  // Open todos keep their order; upcoming ones follow, soonest first.
+  const todos: PlanTodo[] = [
+    ...open.data,
+    ...upcoming.toSorted((a, b) => a.upcomingOn!.localeCompare(b.upcomingOn!)),
+  ];
   const list = { options, today };
 
-  // Deadlines: every dated task, soonest first, wherever else it's listed.
+  // Deadlines: every dated task, and every repeating task's next occurrence,
+  // soonest first, wherever else it's listed.
+  const deadline = (todo: PlanTodo) => todo.upcomingOn ?? todo.due_on;
   const dated = todos
-    .filter((todo) => todo.due_on !== null)
-    .toSorted((a, b) => a.due_on!.localeCompare(b.due_on!));
+    .filter((todo) => deadline(todo) !== null)
+    .toSorted((a, b) => deadline(a)!.localeCompare(deadline(b)!));
 
   // Projects: each task under its project.
   const byProject = Map.groupBy(
@@ -120,7 +151,9 @@ async function PlanSections() {
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Deadlines ({dated.length})</h2>
         {dated.length === 0 ? (
-          <p className="text-sm text-gray-500">No open tasks have a due date.</p>
+          <p className="text-sm text-gray-500">
+            No open tasks have a due date, and nothing repeats.
+          </p>
         ) : (
           <TodoList todos={dated} {...list} />
         )}
@@ -142,7 +175,10 @@ async function PlanSections() {
               id={`project-${project.id}`}
               className="flex scroll-mt-4 flex-col gap-1 rounded border border-gray-200 p-3"
             >
-              <ProjectHeader project={project} openCount={projectTodos.length} />
+              <ProjectHeader
+                project={project}
+                openCount={projectTodos.filter((todo) => !todo.upcomingOn).length}
+              />
               {projectTodos.length === 0 ? (
                 <>
                   <p className="text-sm text-gray-500">

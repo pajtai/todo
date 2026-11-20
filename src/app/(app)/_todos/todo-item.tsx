@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { AreaOption, ProjectOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
 import { describeRecurrence } from "@/lib/habits";
+import { formatDay } from "@/lib/review";
 import { AreaChip } from "../area-chip";
 import { RecurrenceFields } from "../recurrence-fields";
 import { TASK_CARD_CLASS } from "./task-card";
@@ -52,6 +53,13 @@ type TodoItemProps = {
   hideAreaId?: string;
   /** Offer "Convert to project / category", as the inbox does. */
   convertible?: boolean;
+  /**
+   * YYYY-MM-DD. Set, `todo` is a repeating task's latest (completed) todo
+   * standing in for the occurrence not created until this date: no checkbox
+   * or Delete, and a "Next" date in place of the due date. Editing it edits
+   * that latest todo, which the next occurrence copies.
+   */
+  upcomingOn?: string;
 };
 
 export function TodoItem({
@@ -62,6 +70,7 @@ export function TodoItem({
   hideProject,
   hideAreaId,
   convertible,
+  upcomingOn,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const repeats = activeSeries(todo);
@@ -128,6 +137,7 @@ export function TodoItem({
   }
 
   const overdue =
+    !upcomingOn &&
     !completed && today !== undefined && todo.due_on !== null && todo.due_on < today;
   const project = hideProject ? null : todo.project;
   const areas = todo.areas.filter((area) => area.id !== hideAreaId);
@@ -135,19 +145,26 @@ export function TodoItem({
   return (
     <li className={`${TASK_CARD_CLASS} flex flex-col gap-1 py-2`}>
       <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          checked={completed}
-          onChange={toggle}
-          aria-label={`Mark "${todo.title}" as ${completed ? "not done" : "done"}`}
-          className="mt-1.5"
-        />
+        {upcomingOn ? (
+          // Nothing to check off until the occurrence exists.
+          <span aria-hidden className="mt-1.5 size-[13px] shrink-0" />
+        ) : (
+          <input
+            type="checkbox"
+            checked={completed}
+            onChange={toggle}
+            aria-label={`Mark "${todo.title}" as ${completed ? "not done" : "done"}`}
+            className="mt-1.5"
+          />
+        )}
         <button
           type="button"
           onClick={() => setEditing(true)}
           className="flex flex-1 flex-col text-left"
         >
-          <span className={completed ? "text-gray-500 line-through" : ""}>
+          <span
+            className={completed && !upcomingOn ? "text-gray-500 line-through" : ""}
+          >
             {repeats && (
               <span
                 title={`Repeats: ${describeRecurrence(repeats)}`}
@@ -163,7 +180,11 @@ export function TodoItem({
               {todo.notes}
             </span>
           )}
-          {todo.due_on && (
+          {upcomingOn ? (
+            <span className="text-sm text-gray-500">
+              Next {formatDay(upcomingOn)}
+            </span>
+          ) : todo.due_on && (
             <span
               className={`text-sm ${overdue ? "text-red-600" : "text-gray-500"}`}
             >
@@ -208,14 +229,16 @@ export function TodoItem({
             <option value="category">Category</option>
           </select>
         )}
-        <button
-          type="button"
-          onClick={remove}
-          aria-label={`Delete "${todo.title}"`}
-          className="text-sm text-gray-500 underline"
-        >
-          Delete
-        </button>
+        {!upcomingOn && (
+          <button
+            type="button"
+            onClick={remove}
+            aria-label={`Delete "${todo.title}"`}
+            className="text-sm text-gray-500 underline"
+          >
+            Delete
+          </button>
+        )}
       </div>
       {(project || areas.length > 0) && (
         <div className="ml-7 flex flex-wrap gap-1.5">

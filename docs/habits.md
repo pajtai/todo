@@ -48,6 +48,7 @@ A todo completed late, say on Tuesday for Monday's occurrence, counts toward Mon
 - Task edit form: **Repeats** section on every task.
 - Starring a repeating task (☆ in lists) stars every todo in its series, past and future; unstarring clears them all.
 - Task lists (`/do`, `/plan`, category pages): repeating tasks show ↻, with the rule in the tooltip.
+- `/plan`: a repeating task with no open todo shows its next occurrence date (see [screens.md](screens.md#upcoming-repeats-on-plan)).
 - `/categories/[id]`, when the category has repeating tasks: a **Repeating tasks** section with each task and its rule, the current streak, the 30-day rate, and a 30-day grid (done / missed / due today / not scheduled). Rendered by `categories/[id]/repeating-stats.tsx`. Without repeating tasks the section is hidden.
 - `/review`: **Repeating tasks** lists each category's rate for the period, above the grouping (only the filtered category with `?category=`).
 

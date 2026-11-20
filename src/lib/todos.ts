@@ -16,6 +16,25 @@ export function selectTodos(supabase: Client, areaId?: string) {
     : query;
 }
 
+// Active repeat rules, each with its most recent todo (the one the next
+// occurrence copies, ordered as in `ensure_habit_todos`), in the shape
+// `selectTodos` returns.
+export function selectSeriesWithLatest(supabase: Client) {
+  return supabase
+    .from("todo_series")
+    .select(
+      "id, recurrence, recurrence_days, starts_on, ended_on, todos(id, title, notes, due_on, completed_at, starred, created_at, project_id, occurrence_date, project:projects(id, name), areas!todo_areas(id, name, color))",
+    )
+    .is("ended_on", null)
+    .order("occurrence_date", {
+      referencedTable: "todos",
+      ascending: false,
+      nullsFirst: false,
+    })
+    .order("created_at", { referencedTable: "todos", ascending: false })
+    .limit(1, { referencedTable: "todos" });
+}
+
 export function selectActiveAreas(supabase: Client) {
   return supabase
     .from("areas")
