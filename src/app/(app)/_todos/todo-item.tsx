@@ -2,7 +2,7 @@
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
-import type { AreaOption, ProjectOption } from "@/lib/areas";
+import { NEW_PROJECT, type AreaOption, type ProjectOption } from "@/lib/areas";
 import type { Tables } from "@/lib/database.types";
 import { describeRecurrence } from "@/lib/habits";
 import { formatDay } from "@/lib/review";
@@ -297,6 +297,10 @@ export function EditForm({
       ? [...projectOptions, todo.project]
       : projectOptions;
   const attachedIds = new Set(todo.areas.map((area) => area.id));
+  // Controlled so a failed save (React resets the form) keeps the choice and
+  // the "New project name" box in sync.
+  const [projectValue, setProjectValue] = useState(todo.project?.id ?? "");
+  const newProject = projectValue === NEW_PROJECT;
   const inputClass = "rounded border border-gray-300 px-3 py-2 text-black";
   const [state, formAction, pending] = useActionState(
     async (_previous: TodoActionState, formData: FormData) => {
@@ -370,7 +374,8 @@ export function EditForm({
           Project
           <select
             name="project_id"
-            defaultValue={todo.project?.id ?? ""}
+            value={projectValue}
+            onChange={(event) => setProjectValue(event.target.value)}
             className={inputClass}
           >
             <option value="">None</option>
@@ -379,7 +384,21 @@ export function EditForm({
                 {project.name}
               </option>
             ))}
+            <option value={NEW_PROJECT}>+ New project…</option>
           </select>
+        </label>
+      )}
+      {pickableProjects && newProject && (
+        <label className="flex flex-col gap-1 text-sm">
+          New project name
+          <input
+            name="new_project_name"
+            required
+            maxLength={100}
+            autoFocus
+            autoComplete="off"
+            className={inputClass}
+          />
         </label>
       )}
       {pickable.length > 0 && (

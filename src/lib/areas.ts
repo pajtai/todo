@@ -13,3 +13,6 @@ export function isUuid(value: unknown): value is string {
 
 /** A todo's project: its optional single parent. */
 export type ProjectOption = Pick<Tables<"projects">, "id" | "name">;
+
+/** The Project dropdown's "New project…" value: create one from a typed name. */
+export const NEW_PROJECT = "new";

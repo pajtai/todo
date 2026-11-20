@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isUuid } from "@/lib/areas";
+import { isUuid, NEW_PROJECT } from "@/lib/areas";
 import type { Database, TablesUpdate } from "@/lib/database.types";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -11,6 +11,7 @@ import { fromLocalInput } from "@/lib/zoned-time";
 export type TodoActionState = { error?: string; title?: string };
 
 const MAX_TITLE_LENGTH = 500;
+const MAX_PROJECT_NAME_LENGTH = 100;
 
 function validateTitle(title: string) {
   if (!title) {
@@ -113,7 +114,32 @@ export async function updateTodo(
   };
   // Forms without a Project field leave the project alone.
   const projectId = formData.get("project_id");
-  if (projectId !== null) {
+  if (projectId === NEW_PROJECT) {
+    // "New project…" in the dropdown: create it, then file the todo under it.
+    const name = String(formData.get("new_project_name") ?? "").trim();
+    if (!name) {
+      return { error: "Enter a name for the new project." };
+    }
+    if (name.length > MAX_PROJECT_NAME_LENGTH) {
+      return {
+        error: `Keep the project name under ${MAX_PROJECT_NAME_LENGTH} characters.`,
+      };
+    }
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .insert({ name })
+      .select("id")
+      .single();
+    if (projectError) {
+      return {
+        error:
+          projectError.code === "23505"
+            ? "You already have a project with this name."
+            : "Couldn't create the project. Try again.",
+      };
+    }
+    changes.project_id = project.id;
+  } else if (projectId !== null) {
     if (projectId !== "" && !isUuid(projectId)) {
       return { error: "Choose a valid project." };
     }

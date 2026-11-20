@@ -13,6 +13,10 @@ The nav has four screens. `/` and `/todos` (the old single list) redirect to `/d
 
 A repeating task's next todo isn't created until its day (see [habits.md](habits.md#generation-is-lazy-today-only)), so once today's is done, or on a day the rule skips, the series has no open todo. Plan still lists it: the series' latest todo stands in for the next occurrence, under Deadlines by that date and wherever the todo would be listed (its project, or its categories). It shows **Next** and the date instead of a checkbox and Delete. Editing it edits that latest todo, which the next occurrence copies; starring stars the whole series. An open repeating todo scheduled after today, such as a new weekly task whose start date is still ahead (making a task repeat turns it into the first occurrence), also shows **Next** and its date, but keeps its checkbox. Do doesn't list it until that day. `nextOccurrence` in `src/lib/habits.ts` (unit-tested) finds the date: the first day after today that matches the rule, not before `starts_on`. Stopped series (`ended_on` set) don't show.
 
+## Creating a project from a task's edit form
+
+The edit form's **Project** dropdown ends with **+ New project…**. Choosing it shows a **New project name** box; on Save, `updateTodo` creates the project and files the task under it. A taken name (`23505`) shows an error and leaves the task unchanged. This is the quickest way to file a new Capture task under a project that doesn't exist yet.
+
 ## Converting an inbox task
 
 **Convert to… → Project / Category** (after a confirm) calls `convert_todo(todo, kind)`, which creates a project or category named after the task's title, with its notes as the description, and deletes the task, all in one transaction. If the name is taken (`23505`) or longer than 100 characters (`23514`), nothing changes and the item shows an error.
