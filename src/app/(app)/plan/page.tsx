@@ -20,9 +20,22 @@ import { SectionHeader } from "./section-header";
 type PlanTodo = Todo & {
   project_id: string | null;
   created_at: string;
+  occurrence_date: string | null;
   /** Set for a repeating task with no open todo: when the next one appears. */
   upcomingOn?: string;
 };
+
+// The day a repeating todo is scheduled for, if it still repeats.
+function occursOn(todo: PlanTodo) {
+  return todo.series && !todo.series.ended_on ? todo.occurrence_date : null;
+}
+
+// An open repeating todo scheduled after today, e.g. a weekly task whose
+// start date is still ahead, shows "Next" and that date.
+function nextOn(todo: PlanTodo, today: string) {
+  const date = occursOn(todo);
+  return date && date > today ? date : undefined;
+}
 
 type ListProps = {
   todos: PlanTodo[];
@@ -50,6 +63,7 @@ function TodoList({
           {...options}
           today={today}
           upcomingOn={todo.upcomingOn}
+          nextOn={nextOn(todo, today)}
           hideProject={hideProject}
           hideAreaId={hideAreaId}
           convertible={convertible}
@@ -108,9 +122,10 @@ async function PlanSections() {
   ];
   const list = { options, today };
 
-  // Deadlines: every dated task, and every repeating task's next occurrence,
-  // soonest first, wherever else it's listed.
-  const deadline = (todo: PlanTodo) => todo.upcomingOn ?? todo.due_on;
+  // Deadlines: every dated task, and every repeating task by the day of its
+  // open or next occurrence, soonest first, wherever else it's listed.
+  const deadline = (todo: PlanTodo) =>
+    todo.upcomingOn ?? todo.due_on ?? occursOn(todo);
   const dated = todos
     .filter((todo) => deadline(todo) !== null)
     .toSorted((a, b) => deadline(a)!.localeCompare(deadline(b)!));

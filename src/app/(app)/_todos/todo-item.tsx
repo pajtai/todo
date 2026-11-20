@@ -60,6 +60,8 @@ type TodoItemProps = {
    * that latest todo, which the next occurrence copies.
    */
   upcomingOn?: string;
+  /** YYYY-MM-DD. Shown as "Next …": a repeating todo scheduled after today. */
+  nextOn?: string;
 };
 
 export function TodoItem({
@@ -71,6 +73,7 @@ export function TodoItem({
   hideAreaId,
   convertible,
   upcomingOn,
+  nextOn,
 }: TodoItemProps) {
   const [editing, setEditing] = useState(false);
   const repeats = activeSeries(todo);
@@ -180,11 +183,12 @@ export function TodoItem({
               {todo.notes}
             </span>
           )}
-          {upcomingOn ? (
+          {(upcomingOn ?? nextOn) && (
             <span className="text-sm text-gray-500">
-              Next {formatDay(upcomingOn)}
+              Next {formatDay((upcomingOn ?? nextOn)!)}
             </span>
-          ) : todo.due_on && (
+          )}
+          {!upcomingOn && todo.due_on && (
             <span
               className={`text-sm ${overdue ? "text-red-600" : "text-gray-500"}`}
             >
