@@ -42,6 +42,44 @@ export function describeRecurrence(rule: HabitRule) {
   return RECURRENCE_LABELS[rule.recurrence];
 }
 
+/** Whether the rule falls on `date`, ignoring `starts_on` as a lower bound.
+ *  Mirrors `habit_rule_matches` in SQL. */
+function ruleMatches(rule: HabitRule, date: string) {
+  const day = new Date(`${date}T00:00:00Z`).getUTCDay();
+  switch (rule.recurrence) {
+    case "daily":
+      return true;
+    case "weekly":
+      return (
+        rule.starts_on !== null &&
+        new Date(`${rule.starts_on}T00:00:00Z`).getUTCDay() === day
+      );
+    case "weekdays":
+      return rule.recurrence_days?.includes(day) ?? false;
+    default:
+      return false;
+  }
+}
+
+/**
+ * The first day after `after` the rule falls on, never before `starts_on`:
+ * when a repeating task's next todo will be created. Null if the rule never
+ * matches (an unknown recurrence or no days).
+ */
+export function nextOccurrence(rule: HabitRule, after: string) {
+  let date = addDays(after, 1);
+  if (rule.starts_on && rule.starts_on > date) {
+    date = rule.starts_on;
+  }
+  // Every rule repeats within a week.
+  for (let i = 0; i < 7; i += 1, date = addDays(date, 1)) {
+    if (ruleMatches(rule, date)) {
+      return date;
+    }
+  }
+  return null;
+}
+
 export type ParsedRecurrence =
   | { error: string }
   | {

@@ -5,6 +5,7 @@ import {
   habitGrid,
   habitRate,
   habitStreak,
+  nextOccurrence,
   parseRecurrence,
 } from "./habits";
 
@@ -122,5 +123,36 @@ describe("habitStreak", () => {
     ];
     expect(habitStreak(list, today)).toBe(0);
     expect(habitGrid(list, "2026-11-02", "2026-11-02", today)[0].status).toBe("missed");
+  });
+});
+
+describe("nextOccurrence", () => {
+  // 2026-11-03 is a Tuesday.
+  const rule = (recurrence: string, starts_on = "2026-10-01", recurrence_days: number[] | null = null) => ({
+    recurrence,
+    recurrence_days,
+    starts_on,
+  });
+
+  it("is tomorrow for a daily task", () => {
+    expect(nextOccurrence(rule("daily"), today)).toBe("2026-11-04");
+  });
+
+  it("finds the next matching weekday after today", () => {
+    // starts_on 2026-11-02 is a Monday.
+    expect(nextOccurrence(rule("weekly", "2026-11-02"), today)).toBe("2026-11-09");
+    // Tuesday itself is skipped: today's occurrence is already handled.
+    expect(nextOccurrence(rule("weekly", "2026-10-27"), today)).toBe("2026-11-10");
+    expect(nextOccurrence(rule("weekdays", "2026-10-01", [1, 5]), today)).toBe("2026-11-06");
+  });
+
+  it("waits for a future start date", () => {
+    expect(nextOccurrence(rule("daily", "2026-11-20"), today)).toBe("2026-11-20");
+    expect(nextOccurrence(rule("weekdays", "2026-11-20", [1]), today)).toBe("2026-11-23");
+  });
+
+  it("is null when the rule can't match", () => {
+    expect(nextOccurrence(rule("weekdays", "2026-10-01", []), today)).toBeNull();
+    expect(nextOccurrence(rule("yearly"), today)).toBeNull();
   });
 });
