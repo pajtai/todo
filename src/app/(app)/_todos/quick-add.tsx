@@ -1,15 +1,24 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { createTodo } from "./actions";
 
 export function QuickAdd() {
   const [state, formAction, pending] = useActionState(createTodo, {});
+  const input = useRef<HTMLInputElement>(null);
+
+  // Focus the box whenever the page is shown. Next.js keeps visited pages
+  // mounted but hidden (React <Activity>), so `autoFocus` would only work on
+  // the first visit; effects re-run each time the page becomes visible.
+  useEffect(() => {
+    input.current?.focus();
+  }, []);
 
   return (
     <form action={formAction} className="flex flex-col gap-1">
       <div className="flex gap-2">
         <input
+          ref={input}
           name="title"
           aria-label="New todo"
           placeholder="Add a todo…"
